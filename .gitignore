@@ -51,3 +51,6 @@ tests/release-smoke/test-results/
 tests/release-smoke/playwright-report/
 .superset/
 .claude/worktrees/
+
+# Axon graph DB cache (Kuzu — local index, regenerable via axon analyze)
+.axon/
