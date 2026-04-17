@@ -96,6 +96,11 @@ const adapterDisplayMap: Record<string, AdapterDisplayInfo> = {
     comingSoon: true,
     disabledLabel: "Configure OpenClaw within the App",
   },
+  mastra_gateway: {
+    label: "Mastra Gateway",
+    description: "Invoke a Mastra workflow over HTTP with Paperclip governance",
+    icon: Bot,
+  },
   process: {
     label: "Process",
     description: "Internal process adapter",

@@ -55,6 +55,14 @@ import {
   agentConfigurationDoc as openclawGatewayAgentConfigurationDoc,
   models as openclawGatewayModels,
 } from "@paperclipai/adapter-openclaw-gateway";
+import {
+  execute as mastraGatewayExecute,
+  testEnvironment as mastraGatewayTestEnvironment,
+} from "@paperclipai/adapter-mastra-gateway/server";
+import {
+  agentConfigurationDoc as mastraGatewayAgentConfigurationDoc,
+  models as mastraGatewayModels,
+} from "@paperclipai/adapter-mastra-gateway";
 import { listCodexModels } from "./codex-models.js";
 import { listCursorModels } from "./cursor-models.js";
 import {
@@ -166,6 +174,17 @@ const openclawGatewayAdapter: ServerAdapterModule = {
   agentConfigurationDoc: openclawGatewayAgentConfigurationDoc,
 };
 
+const mastraGatewayAdapter: ServerAdapterModule = {
+  type: "mastra_gateway",
+  execute: mastraGatewayExecute,
+  testEnvironment: mastraGatewayTestEnvironment,
+  models: mastraGatewayModels,
+  supportsLocalAgentJwt: false,
+  supportsInstructionsBundle: false,
+  requiresMaterializedRuntimeSkills: false,
+  agentConfigurationDoc: mastraGatewayAgentConfigurationDoc,
+};
+
 const openCodeLocalAdapter: ServerAdapterModule = {
   type: "opencode_local",
   execute: openCodeExecute,
@@ -236,6 +255,7 @@ function registerBuiltInAdapters() {
     cursorLocalAdapter,
     geminiLocalAdapter,
     openclawGatewayAdapter,
+    mastraGatewayAdapter,
     hermesLocalAdapter,
     processAdapter,
     httpAdapter,
