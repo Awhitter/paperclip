@@ -1,0 +1,54 @@
+# Paperclip (HLT fork) — llms.txt
+
+Governance plane for HLT agents. Fork of the OSS `paperclipai/paperclip`, adapted with HLT-specific adapter extensions.
+
+## What this repo is
+
+Paperclip is a business-level governance + orchestration plane for agent work: **companies** (organizational units), **goals** (what to accomplish), **issues** (tasks an agent picks up and works on), **budgets** (monthly + per-run hard limits), **approvals** (single-use gates for sensitive mutations), and an immutable **activity log** for audit.
+
+Paperclip does NOT execute work itself — it coordinates adapters that do. Shipped adapters: `claude_local`, `codex_local`, `cursor`, `gemini_local`, `opencode_local`, `pi_local`, `openclaw_gateway`, `hermes_local`. HLT's fork adds `mastra_gateway` (branch `session-2026-04-16-mastra-gateway-adapter-wip`, commit `802121ce`, pushed to `Awhitter/paperclip`) which dispatches work to a Mastra workflow over HTTP with Paperclip-level governance applied on return.
+
+## Where it sits in the HLT ecosystem
+
+- **Canonical path:** `~/hlt/paperclip/`
+- **HLT fork:** `Awhitter/paperclip`
+- **Upstream:** `paperclipai/paperclip`
+- **Active branch:** `session-2026-04-16-mastra-gateway-adapter-wip` (Track B of the 2026-04-16 cross-validation plan)
+- **Upstream PR:** **pending operator decision.** Branch is on the Awhitter fork. Can be PR'd upstream or kept private.
+- **Role:** **governance + orchestration** — the one place per-agent budgets, per-run approvals, and cross-vertical audit live. Every future HLT vertical (nursing, social, more) plugs into the same Paperclip instance as a new **company**.
+- **DB:** separate Postgres instance from Katailyst. Both point at Supabase. See `~/hlt/katailyst/docs/reports/doc/2026-04-16-paperclip-katalyst-screenpipe-investigation.md` for the DB-topology decision.
+- **Ecosystem map:** [`~/hlt/katailyst/docs/ecosystem-map/05-llms-ecosystem-master.md`](../katailyst/docs/ecosystem-map/05-llms-ecosystem-master.md)
+
+## Read first (in order)
+
+1. `README.md` + `AGENTS.md` — upstream docs (still largely current)
+2. `packages/adapter-utils/src/types.ts` — the `ServerAdapterModule` contract every adapter implements
+3. `server/src/adapters/registry.ts` — where adapters are registered (including HLT's `mastra_gateway` on this branch)
+4. `packages/adapters/mastra-gateway/` — HLT's new adapter package (execute/test/ui) — verified typechecks clean from ~/hlt/paperclip
+5. `doc/plugins/PLUGIN_SPEC.md` — plugin architecture (for katailyst-registry plugin, planned)
+6. `~/hlt/katailyst/docs/runbooks/paperclip/` — HLT-specific runbooks (Content Factory setup, nurse-recruiting pilot)
+
+## Sibling repos
+
+- `~/hlt/katailyst/` — capability canon. The planned `katailyst-registry` Paperclip plugin would expose Katailyst's `discover` / `get_skill_content` / `registry_search` as agent-callable tools.
+- `~/hlt/mastra/` + `~/hlt/research-team/` — Mastra substrates invoked via the `mastra_gateway` adapter.
+- `~/hlt/mastery-publishing/` — article sink that the Content Factory company publishes to, gated by Paperclip approvals.
+
+## Rules of engagement
+
+1. **Keep fork-divergence minimal.** Rebase on upstream regularly. HLT-specific changes live on named branches (like `session-2026-04-16-mastra-gateway-adapter-wip`). Don't fork-drift the whole repo.
+2. **Katailyst first** for capability — this is a governance plane, not a capability source. Katailyst has the skills; Paperclip dispatches them.
+3. **Axon second** — `cd ~/hlt/paperclip && axon status` (indexed 2026-04-17).
+4. **Registry counts rule** — Paperclip UIs that surface a count from Katailyst use `registry_capabilities` full-scope.
+5. **Adapter architecture split** — Paperclip owns task identity / budgets / approvals / session keys / activity log. Each adapter owns execution of its runtime (CLI process, HTTP call, WebSocket gateway, etc.). Don't smuggle governance concerns into adapters, don't smuggle execution concerns into the core.
+6. **Single-use approvals** — any adapter mutation that consumes an approval must check it's status=approved, not already consumed, not expired. See `~/hlt/katailyst/scripts/integrations/content-engine-sync-articles-gated.ts` for the reference pattern.
+
+## Track B status (mastra-gateway adapter)
+
+- [x] Adapter package scaffolded at `packages/adapters/mastra-gateway/` (server execute + UI parser + config builder)
+- [x] Registered in 5 places: `server/src/adapters/builtin-adapter-types.ts`, `server/src/adapters/registry.ts`, `ui/src/adapters/registry.ts`, `ui/src/adapters/adapter-display-registry.ts`, `ui/src/adapters/use-adapter-capabilities.ts`
+- [x] pnpm -r typecheck clean. pnpm test:run: 1487/1488 passing. pnpm build: clean.
+- [x] Committed + pushed to `Awhitter/paperclip:session-2026-04-16-mastra-gateway-adapter-wip` (`802121ce`)
+- [x] Axon graph updated at ~/hlt/paperclip path
+- [ ] **Operator decision: PR upstream to `paperclipai/paperclip:master`, or keep on fork?**
+- [ ] When GPT Researcher deploys + Mastra audience-research workflow ships, wire end-to-end per the nurse-recruiting pilot runbook
