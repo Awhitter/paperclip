@@ -1,19 +1,4 @@
-# Paperclip Repo Front Door
-
-> Repo-local entrypoint generated from the shared HLT ecosystem llms master. Read the repo-specific note below, then use the shared ecosystem guide that follows.
-
-## Repo-specific note
-
-You are currently inside **Paperclip**, the Mastra-gateway-adapter lane. Parked on session branch with adapter scaffold complete but unregistered in Paperclip core. Six release-focused GitHub workflows; one of the more CI-mature non-katailyst repos.
-
-### Inspect first in this repo
-- adapter scaffold
-- session branch state
-- release workflows
-
-
 # HLT Ecosystem Index for Agents
-
 
 > Official cross-repo front door for AI agents working anywhere in the HLT ecosystem. Read this file first. It explains what repos exist, what they are for, where they live, what URLs they own, what core shapes and contracts matter, which systems are canonical, and how to navigate the ecosystem without acting like the current repo is the whole world.
 
