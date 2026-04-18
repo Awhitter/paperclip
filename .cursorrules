@@ -12,6 +12,13 @@ For maximum context, read **`llms-full.txt`** (the full System Map bundle).
 
 ## How this repo fits
 
+## Repo quickstart
+
+- **What this IS**: Governance plane for agents (HLT fork): companies, goals, budgets, approvals, audit log. Does not execute — coordinates adapters.
+- **Live URL**: n/a (local; branch session-2026-04-16-mastra-gateway-adapter-wip)
+- **Local run**: `pnpm -r dev`
+- **Env vars this repo reads**: DATABASE_URL (separate Supabase), adapter-specific env (CLAUDE_*, CODEX_*, MASTRA_*). Never paste values — resolution via `kb:katailyst-vault-access-pattern`.
+
 ## Repo-specific note
 
 You are currently inside **Paperclip**, the Mastra-gateway-adapter lane. Parked on session branch with adapter scaffold complete but unregistered in Paperclip core. Six release-focused GitHub workflows; one of the more CI-mature non-katailyst repos.
@@ -21,6 +28,14 @@ You are currently inside **Paperclip**, the Mastra-gateway-adapter lane. Parked 
 - session branch state
 - release workflows
 
+
+### Recent significant changes (last 5 commits)
+
+- 1540af97 2026-04-17 chore(agents): observability + discoverability — .mcp.json, AGENTS.md, fresh llms.txt
+- 05074d7d 2026-04-17 chore(gitignore): exclude .axon/ Kuzu cache (regenerable via axon analyze)
+- 89c9705d 2026-04-17 docs(llms): add repo-specific llms.txt for HLT ecosystem bootstrap
+- 802121ce 2026-04-16 WIP: mastra-gateway adapter registration (cross-session preservation 2026-04-17)
+- e93e418c 2026-04-17 fix: add ssh client and jq to production image (#3826)
 
 ## Behavioral rules
 
