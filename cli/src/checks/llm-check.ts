@@ -28,7 +28,9 @@ export async function llmCheck(config: PaperclipConfig): Promise<CheckResult> {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-5-20250929",
+          // HLT policy (MEMORY.md): Opus everywhere. Probe with a valid Opus
+          // model so the health check matches fleet-wide expectations.
+          model: "claude-opus-4-5",
           max_tokens: 1,
           messages: [{ role: "user", content: "hi" }],
         }),

@@ -517,7 +517,9 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
               "content-type": "application/json",
             },
             body: JSON.stringify({
-              model: "claude-sonnet-4-5-20250929",
+              // HLT policy (MEMORY.md): Opus everywhere. Using a valid Opus
+              // model ID as the health-check probe keeps the CLI aligned.
+              model: "claude-opus-4-5",
               max_tokens: 1,
               messages: [{ role: "user", content: "hi" }],
             }),
