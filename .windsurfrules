@@ -31,11 +31,11 @@ You are currently inside **Paperclip**, the Mastra-gateway-adapter lane. Parked 
 
 ### Recent significant changes (last 5 commits)
 
+- f68971a2 2026-04-18 docs(llms-txt + canon): agentic-infrastructure posture + friction-to-canon rule + named gaps
 - 82291e0b 2026-04-18 docs(llms-txt): Replit-style link-index sections (master aadcf80d2a70)
 - b8fa662b 2026-04-17 docs(llms-txt): audit flag on stale repo-inventory entries
 - ff6b190d 2026-04-17 docs(llms-txt): v2 ecosystem fan-out — repo quickstart + key entities + jump-to nav
 - 1540af97 2026-04-17 chore(agents): observability + discoverability — .mcp.json, AGENTS.md, fresh llms.txt
-- 05074d7d 2026-04-17 chore(gitignore): exclude .axon/ Kuzu cache (regenerable via axon analyze)
 
 ## Behavioral rules
 
