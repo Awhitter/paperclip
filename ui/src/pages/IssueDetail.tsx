@@ -86,12 +86,20 @@ import {
   ArrowLeft,
   Check,
   ChevronRight,
+  Code2,
   Copy,
   EyeOff,
+  ExternalLink,
+  FileText,
+  GitBranch,
+  GitCommit,
+  GitPullRequest,
+  Globe,
   Hexagon,
   MessageSquare,
   MoreHorizontal,
   MoreVertical,
+  Package,
   Paperclip,
   Plus,
   Repeat,
@@ -107,6 +115,7 @@ import {
   type Issue,
   type IssueAttachment,
   type IssueComment,
+  type IssueWorkProduct,
 } from "@paperclipai/shared";
 
 type CommentReassignment = IssueCommentReassignment;
@@ -169,6 +178,92 @@ function isMarkdownFile(file: File) {
     name.endsWith(".md") ||
     name.endsWith(".markdown") ||
     file.type === "text/markdown"
+  );
+}
+
+function isSafeExternalUrl(value: string | null | undefined) {
+  if (!value) return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function workProductTypeLabel(type: string) {
+  return type
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function WorkProductIcon({ type }: { type: string }) {
+  const className = "h-3.5 w-3.5 shrink-0";
+  if (type === "preview_url") return <Globe className={className} />;
+  if (type === "runtime_service") return <Code2 className={className} />;
+  if (type === "pull_request") return <GitPullRequest className={className} />;
+  if (type === "branch") return <GitBranch className={className} />;
+  if (type === "commit") return <GitCommit className={className} />;
+  if (type === "document") return <FileText className={className} />;
+  return <Package className={className} />;
+}
+
+function IssueWorkProductsSection({ workProducts }: { workProducts: IssueWorkProduct[] }) {
+  if (workProducts.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-sm font-medium text-muted-foreground">Work products</h3>
+        <span className="text-xs text-muted-foreground">{workProducts.length}</span>
+      </div>
+      <div className="space-y-2">
+        {workProducts.map((product) => {
+          const title = product.title || workProductTypeLabel(product.type);
+          const linked = isSafeExternalUrl(product.url);
+          const body = (
+            <>
+              <div className="flex min-w-0 items-center gap-2">
+                <WorkProductIcon type={product.type} />
+                <span className="truncate text-sm font-medium">{title}</span>
+                {linked ? <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                <span>{workProductTypeLabel(product.type)}</span>
+                <span>{product.provider}</span>
+                <span>{product.status}</span>
+                {product.isPrimary ? <span>primary</span> : null}
+                {product.healthStatus !== "unknown" ? <span>{product.healthStatus}</span> : null}
+              </div>
+              {product.summary ? (
+                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{product.summary}</p>
+              ) : null}
+            </>
+          );
+
+          return linked ? (
+            <a
+              key={product.id}
+              href={product.url!}
+              target="_blank"
+              rel="noreferrer"
+              className="block rounded-md border border-border p-2 transition-colors hover:bg-accent/40"
+            >
+              {body}
+            </a>
+          ) : (
+            <div key={product.id} className="rounded-md border border-border p-2">
+              {body}
+              {product.url ? (
+                <p className="mt-1 break-all font-mono text-[11px] text-muted-foreground">{product.url}</p>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -2445,6 +2540,8 @@ export function IssueDetail() {
         }}
         extraActions={!hasAttachments ? attachmentUploadButton : null}
       />
+
+      <IssueWorkProductsSection workProducts={issue.workProducts ?? []} />
 
       {attachmentsInitialLoading ? (
         <IssueSectionSkeleton titleWidth="w-24" rows={2} />
