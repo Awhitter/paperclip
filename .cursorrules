@@ -31,11 +31,11 @@ You are currently inside **Paperclip**, the Mastra-gateway-adapter lane. Parked 
 
 ### Recent significant changes (last 5 commits)
 
+- 7a33121b 2026-04-20 feat(ui): IssueDetail adds work-product icons + external-link affordances
+- cf0071f9 2026-04-19 docs(cloudinary): repoint agent-facing refs from dq9xmts6p to hlt-media
+- 0db89748 2026-04-18 chore(cli): upgrade API health-check probes to Opus (INCH 10 fan-out)
+- 90be1b02 2026-04-18 docs(llms-txt): master refresh — app portfolio pointer + naming drift + deep integration + social/ads platforms + 32-item follow-up
 - f44d8398 2026-04-18 docs(llms-txt): HLT operator principles + other-session mission specs + integration-FAIL gaps
-- 8ce612df 2026-04-18 docs(inner-loop): reframe from build-time to model round-trip; triple hygiene thresholds
-- fe10d403 2026-04-18 docs(build-time): double the inner-loop thresholds per operator — 60s/120s/180s
-- f68971a2 2026-04-18 docs(llms-txt + canon): agentic-infrastructure posture + friction-to-canon rule + named gaps
-- 82291e0b 2026-04-18 docs(llms-txt): Replit-style link-index sections (master aadcf80d2a70)
 
 ## Behavioral rules
 
