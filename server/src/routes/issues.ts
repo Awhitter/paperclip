@@ -80,8 +80,19 @@ import {
 } from "../services/issue-execution-policy.js";
 
 const MAX_ISSUE_COMMENT_LIMIT = 500;
+const CHAT_ATTACHMENT_READ_DEFAULT_MAX_BYTES = 128 * 1024;
+const CHAT_ATTACHMENT_READ_MAX_BYTES = 1024 * 1024;
 const updateIssueRouteSchema = updateIssueSchema.extend({
   interrupt: z.boolean().optional(),
+});
+const chatAttachmentsReadQuerySchema = z.object({
+  runId: z.string().trim().min(1).optional(),
+  issueId: z.string().trim().min(1).optional(),
+  commentId: z.string().trim().min(1).optional(),
+  attachmentId: z.string().trim().min(1).optional(),
+  includeContent: z.string().optional(),
+  includeBinaryBase64: z.string().optional(),
+  maxBytes: z.string().optional(),
 });
 
 type ParsedExecutionState = NonNullable<ReturnType<typeof parseIssueExecutionState>>;
@@ -458,6 +469,85 @@ export function issueRoutes(
     }
   }
 
+  function parseReadAttachmentMaxBytes(value: string | undefined) {
+    if (!value) return CHAT_ATTACHMENT_READ_DEFAULT_MAX_BYTES;
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      throw new HttpError(400, "maxBytes must be a positive integer");
+    }
+    return Math.min(parsed, CHAT_ATTACHMENT_READ_MAX_BYTES);
+  }
+
+  function asRecord(value: unknown): Record<string, unknown> {
+    return value && typeof value === "object" && !Array.isArray(value)
+      ? value as Record<string, unknown>
+      : {};
+  }
+
+  function readNonEmptyString(value: unknown) {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  function readStringArray(value: unknown) {
+    if (!Array.isArray(value)) return [];
+    const out: string[] = [];
+    for (const entry of value) {
+      const normalized = readNonEmptyString(entry);
+      if (normalized && !out.includes(normalized)) out.push(normalized);
+    }
+    return out;
+  }
+
+  function extractAttachmentIdsFromText(text: string) {
+    const ids = new Set<string>();
+    const pattern = /\/api\/attachments\/([^/\s)#?]+)\/content\b/g;
+    for (const match of text.matchAll(pattern)) {
+      const id = match[1]?.trim();
+      if (!id) continue;
+      try {
+        ids.add(decodeURIComponent(id));
+      } catch {
+        ids.add(id);
+      }
+    }
+    return ids;
+  }
+
+  function isTextReadableAttachmentContentType(contentType: string) {
+    const normalized = normalizeContentType(contentType);
+    return normalized.startsWith("text/") || normalized === "application/json" || normalized.endsWith("+json");
+  }
+
+  async function readStreamPrefix(stream: NodeJS.ReadableStream, maxBytes: number) {
+    const chunks: Buffer[] = [];
+    let total = 0;
+    let truncated = false;
+
+    for await (const rawChunk of stream) {
+      const chunk = Buffer.isBuffer(rawChunk) ? rawChunk : Buffer.from(String(rawChunk));
+      const remaining = maxBytes - total;
+      if (remaining <= 0) {
+        truncated = true;
+        break;
+      }
+      if (chunk.length > remaining) {
+        chunks.push(chunk.subarray(0, remaining));
+        total += remaining;
+        truncated = true;
+        break;
+      }
+      chunks.push(chunk);
+      total += chunk.length;
+    }
+
+    return {
+      buffer: Buffer.concat(chunks, total),
+      truncated,
+    };
+  }
+
   function parseDateQuery(value: unknown, field: string) {
     if (typeof value !== "string" || value.trim().length === 0) return undefined;
     const parsed = new Date(value);
@@ -766,6 +856,208 @@ export function issueRoutes(
   router.get("/issues", (_req, res) => {
     res.status(400).json({
       error: "Missing companyId in path. Use /api/companies/{companyId}/issues.",
+    });
+  });
+
+  router.get("/chat/attachments/read", async (req, res) => {
+    const parsedQuery = chatAttachmentsReadQuerySchema.safeParse(req.query);
+    if (!parsedQuery.success) {
+      res.status(400).json({ error: "Invalid attachment read query", details: parsedQuery.error.issues });
+      return;
+    }
+
+    const query = parsedQuery.data;
+    const explicitRunId = query.runId ?? null;
+    const currentRunId = readNonEmptyString(req.actor.runId);
+    if (req.actor.type === "agent" && explicitRunId && currentRunId && explicitRunId !== currentRunId) {
+      res.status(403).json({ error: "Agents can only read attachments for their current run" });
+      return;
+    }
+
+    const runId = explicitRunId ?? currentRunId;
+    const includeContent = query.includeContent === undefined ? true : parseBooleanQuery(query.includeContent);
+    const includeBinaryBase64 = parseBooleanQuery(query.includeBinaryBase64);
+    const maxBytes = parseReadAttachmentMaxBytes(query.maxBytes);
+
+    let run: Awaited<ReturnType<typeof heartbeat.getRun>> | null = null;
+    let runContext: Record<string, unknown> = {};
+    if (runId) {
+      run = await heartbeat.getRun(runId);
+      if (!run) {
+        res.status(404).json({ error: "Heartbeat run not found" });
+        return;
+      }
+      assertCompanyAccess(req, run.companyId);
+      runContext = asRecord(run.contextSnapshot);
+    }
+
+    const explicitAttachmentId = query.attachmentId ?? null;
+    const explicitIssueId = query.issueId ? await normalizeIssueIdentifier(query.issueId) : null;
+    const explicitCommentId = query.commentId ?? null;
+    const contextCommentIds = readStringArray(runContext.wakeCommentIds);
+    const fallbackCommentId = readNonEmptyString(runContext.wakeCommentId) ?? readNonEmptyString(runContext.commentId);
+    if (fallbackCommentId && !contextCommentIds.includes(fallbackCommentId)) {
+      contextCommentIds.push(fallbackCommentId);
+    }
+
+    const contentForAttachment = async (attachment: {
+      companyId: string;
+      objectKey: string;
+      contentType: string;
+      byteSize: number;
+    }) => {
+      const textReadable = isTextReadableAttachmentContentType(attachment.contentType);
+      if (!includeContent) {
+        return {
+          encoding: "omitted" as const,
+          bytesRead: 0,
+          truncated: false,
+          omittedReason: "content_not_requested" as const,
+          textReadable,
+        };
+      }
+      if (!textReadable && !includeBinaryBase64) {
+        return {
+          encoding: "omitted" as const,
+          bytesRead: 0,
+          truncated: false,
+          omittedReason: "binary_content" as const,
+          textReadable,
+        };
+      }
+
+      const object = await storage.getObject(attachment.companyId, attachment.objectKey);
+      const { buffer, truncated } = await readStreamPrefix(object.stream, maxBytes);
+      if (textReadable) {
+        return {
+          encoding: "utf-8" as const,
+          bytesRead: buffer.length,
+          truncated: truncated || attachment.byteSize > buffer.length,
+          textReadable,
+          text: buffer.toString("utf8"),
+        };
+      }
+
+      return {
+        encoding: "base64" as const,
+        bytesRead: buffer.length,
+        truncated: truncated || attachment.byteSize > buffer.length,
+        textReadable,
+        dataBase64: buffer.toString("base64"),
+      };
+    };
+
+    const attachSources = new Map<string, Set<string>>();
+    const noteSource = (attachmentId: string, source: string) => {
+      const existing = attachSources.get(attachmentId) ?? new Set<string>();
+      existing.add(source);
+      attachSources.set(attachmentId, existing);
+    };
+
+    let issueId =
+      explicitIssueId ??
+      readNonEmptyString(runContext.issueId) ??
+      readNonEmptyString(runContext.taskId);
+    let issue: Awaited<ReturnType<typeof svc.getById>> | null = null;
+    const comments: Array<NonNullable<Awaited<ReturnType<typeof svc.getComment>>>> = [];
+    let selectedAttachments: Array<Awaited<ReturnType<typeof svc.getAttachmentById>> extends infer T ? NonNullable<T> : never> = [];
+
+    if (explicitAttachmentId) {
+      const attachment = await svc.getAttachmentById(explicitAttachmentId);
+      if (!attachment) {
+        res.status(404).json({ error: "Attachment not found" });
+        return;
+      }
+      assertCompanyAccess(req, attachment.companyId);
+      noteSource(attachment.id, "explicit_attachment_id");
+      selectedAttachments = [attachment];
+      issueId = issueId ?? attachment.issueId;
+    } else {
+      const commentIds = explicitCommentId ? [explicitCommentId] : contextCommentIds;
+      for (const commentId of commentIds) {
+        const comment = await svc.getComment(commentId);
+        if (!comment) {
+          if (explicitCommentId) {
+            res.status(404).json({ error: "Issue comment not found" });
+            return;
+          }
+          continue;
+        }
+        if (issueId && comment.issueId !== issueId) {
+          if (explicitCommentId) {
+            res.status(422).json({ error: "Comment does not belong to the selected issue" });
+            return;
+          }
+          continue;
+        }
+        issueId = issueId ?? comment.issueId;
+        comments.push(comment);
+      }
+
+      if (!issueId) {
+        res.status(400).json({
+          error: "runId, issueId, commentId, or attachmentId is required to read chat attachments",
+        });
+        return;
+      }
+
+      issue = await svc.getById(issueId);
+      if (!issue) {
+        res.status(404).json({ error: "Issue not found" });
+        return;
+      }
+      assertCompanyAccess(req, issue.companyId);
+
+      const mentionedAttachmentIds = new Set<string>();
+      for (const comment of comments) {
+        for (const attachmentId of extractAttachmentIdsFromText(comment.body)) {
+          mentionedAttachmentIds.add(attachmentId);
+        }
+      }
+
+      const allIssueAttachments = await svc.listAttachments(issue.id);
+      const selected = allIssueAttachments.filter((attachment) => {
+        let matched = false;
+        if (mentionedAttachmentIds.has(attachment.id)) {
+          noteSource(attachment.id, "mentioned_in_wake_comment");
+          matched = true;
+        }
+        if (attachment.issueCommentId && commentIds.includes(attachment.issueCommentId)) {
+          noteSource(attachment.id, "linked_to_wake_comment");
+          matched = true;
+        }
+        return matched;
+      });
+
+      if (selected.length > 0) {
+        selectedAttachments = selected;
+      } else {
+        selectedAttachments = allIssueAttachments;
+        for (const attachment of selectedAttachments) {
+          noteSource(attachment.id, "issue_attachment");
+        }
+      }
+    }
+
+    if (!issue && issueId) {
+      issue = await svc.getById(issueId);
+      if (issue) assertCompanyAccess(req, issue.companyId);
+    }
+
+    const attachments = await Promise.all(
+      selectedAttachments.map(async (attachment) => ({
+        ...withContentPath(attachment),
+        sources: Array.from(attachSources.get(attachment.id) ?? ["issue_attachment"]).sort(),
+        content: await contentForAttachment(attachment),
+      })),
+    );
+
+    res.json({
+      runId: run?.id ?? runId ?? null,
+      issueId: issue?.id ?? issueId ?? null,
+      commentIds: comments.map((comment) => comment.id),
+      maxBytes,
+      attachments,
     });
   });
 
