@@ -8,7 +8,17 @@ const mockIssueService = vi.hoisted(() => ({
   getById: vi.fn(),
   getByIdentifier: vi.fn(),
   createAttachment: vi.fn(),
+  listAttachments: vi.fn(),
   getAttachmentById: vi.fn(),
+  getComment: vi.fn(),
+}));
+
+const mockHeartbeatService = vi.hoisted(() => ({
+  wakeup: vi.fn(async () => undefined),
+  reportRunActivity: vi.fn(async () => undefined),
+  getRun: vi.fn(async () => null),
+  getActiveRunForAgent: vi.fn(async () => null),
+  cancelRun: vi.fn(async () => null),
 }));
 
 const mockLogActivity = vi.hoisted(() => vi.fn(async () => undefined));
@@ -38,13 +48,7 @@ function registerRouteMocks() {
       saveIssueVote: vi.fn(async () => ({ vote: null, consentEnabledNow: false, sharingEnabled: false })),
     }),
     goalService: () => ({}),
-    heartbeatService: () => ({
-      wakeup: vi.fn(async () => undefined),
-      reportRunActivity: vi.fn(async () => undefined),
-      getRun: vi.fn(async () => null),
-      getActiveRunForAgent: vi.fn(async () => null),
-      cancelRun: vi.fn(async () => null),
-    }),
+    heartbeatService: () => mockHeartbeatService,
     instanceSettingsService: () => ({
       get: vi.fn(async () => ({
         id: "instance-settings-1",
@@ -116,6 +120,7 @@ async function createApp(storage: StorageService) {
       companyIds: ["company-1"],
       source: "local_implicit",
       isInstanceAdmin: false,
+      runId: req.header("x-paperclip-run-id") ?? undefined,
     };
     next();
   });
@@ -151,6 +156,9 @@ describe("issue attachment routes", () => {
     registerRouteMocks();
     vi.clearAllMocks();
     mockLogActivity.mockResolvedValue(undefined);
+    mockHeartbeatService.getRun.mockResolvedValue(null);
+    mockIssueService.listAttachments.mockResolvedValue([]);
+    mockIssueService.getComment.mockResolvedValue(null);
   });
 
   it("accepts zip uploads for issue attachments", async () => {
@@ -213,5 +221,69 @@ describe("issue attachment routes", () => {
       undefined,
       'inline; filename="preview.png"',
     ]).toContain(res.headers["content-disposition"]);
+  });
+
+  it("reads attachment metadata and text content for the current chat run", async () => {
+    const storage = createStorageService();
+    const textAttachment = makeAttachment("text/plain", "brief.txt");
+    const otherAttachment = {
+      ...makeAttachment("text/plain", "old.txt"),
+      id: "attachment-2",
+      assetId: "asset-2",
+      objectKey: "issues/issue-1/old.txt",
+      originalFilename: "old.txt",
+    };
+
+    mockHeartbeatService.getRun.mockResolvedValue({
+      id: "33333333-3333-4333-8333-333333333333",
+      companyId: "company-1",
+      agentId: "agent-1",
+      contextSnapshot: {
+        issueId: "11111111-1111-4111-8111-111111111111",
+        wakeCommentIds: ["comment-1"],
+      },
+    });
+    mockIssueService.getById.mockResolvedValue({
+      id: "11111111-1111-4111-8111-111111111111",
+      companyId: "company-1",
+      identifier: "PAP-1",
+    });
+    mockIssueService.getComment.mockResolvedValue({
+      id: "comment-1",
+      companyId: "company-1",
+      issueId: "11111111-1111-4111-8111-111111111111",
+      authorAgentId: null,
+      authorUserId: "local-board",
+      body: "Please review /api/attachments/attachment-1/content before answering.",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    mockIssueService.listAttachments.mockResolvedValue([otherAttachment, textAttachment]);
+
+    const app = await createApp(storage);
+    const res = await request(app)
+      .get("/api/chat/attachments/read?maxBytes=32")
+      .set("X-Paperclip-Run-Id", "33333333-3333-4333-8333-333333333333");
+
+    expect(res.status).toBe(200);
+    expect(mockHeartbeatService.getRun).toHaveBeenCalledWith("33333333-3333-4333-8333-333333333333");
+    expect(storage.getObject).toHaveBeenCalledWith("company-1", textAttachment.objectKey);
+    expect(res.body).toMatchObject({
+      runId: "33333333-3333-4333-8333-333333333333",
+      issueId: "11111111-1111-4111-8111-111111111111",
+      commentIds: ["comment-1"],
+      attachments: [
+        {
+          id: "attachment-1",
+          sources: ["mentioned_in_wake_comment"],
+          contentPath: "/api/attachments/attachment-1/content",
+          content: {
+            encoding: "utf-8",
+            text: "test",
+            textReadable: true,
+          },
+        },
+      ],
+    });
   });
 });
