@@ -50,8 +50,8 @@ async function createApp(
   actor: Record<string, unknown> = { type: "anon" },
 ) {
   const [{ accessRoutes }, { errorHandler }] = await Promise.all([
-    vi.importActual<typeof import("../routes/access.js")>("../routes/access.js"),
-    vi.importActual<typeof import("../middleware/index.js")>("../middleware/index.js"),
+    import("../routes/access.js"),
+    import("../middleware/index.js"),
   ]);
   const app = express();
   app.use((req, _res, next) => {

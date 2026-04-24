@@ -185,7 +185,6 @@ const SESSIONED_LOCAL_ADAPTERS = new Set([
   "codex_local",
   "cursor",
   "gemini_local",
-  "hermes_local",
   "opencode_local",
   "pi_local",
 ]);
@@ -1132,7 +1131,12 @@ function formatCount(value: number | null | undefined) {
 }
 
 export function parseSessionCompactionPolicy(agent: typeof agents.$inferSelect): SessionCompactionPolicy {
-  return resolveSessionCompactionPolicy(agent.adapterType, agent.runtimeConfig).policy;
+  const adapter = getServerAdapter(agent.adapterType);
+  return resolveSessionCompactionPolicy(
+    agent.adapterType,
+    agent.runtimeConfig,
+    adapter.sessionManagement ?? null,
+  ).policy;
 }
 
 export function resolveRuntimeSessionParamsForWorkspace(input: {
@@ -1711,7 +1715,8 @@ function isSameTaskScope(left: string | null, right: string | null) {
 }
 
 function isTrackedLocalChildProcessAdapter(adapterType: string) {
-  return SESSIONED_LOCAL_ADAPTERS.has(adapterType);
+  const adapter = getServerAdapter(adapterType);
+  return adapter.sessionManagement?.supportsSessionResume === true;
 }
 
 function isHeartbeatRunTerminalStatus(

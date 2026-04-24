@@ -2,19 +2,11 @@ import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
-  activityLog,
   agents,
-  agentRuntimeState,
   agentWakeupRequests,
-  companySkills,
   companies,
   createDb,
-  documentRevisions,
-  documents,
-  heartbeatRunEvents,
   heartbeatRuns,
-  issueComments,
-  issueDocuments,
   issueRelations,
   issueTreeHolds,
   issues,
@@ -112,22 +104,36 @@ describeEmbeddedPostgres("heartbeat dependency-aware queued run selection", () =
       }
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    await db.delete(activityLog);
-    await db.delete(companySkills);
-    await db.delete(issueComments);
-    await db.delete(issueDocuments);
-    await db.delete(documentRevisions);
-    await db.delete(documents);
-    await db.delete(issueRelations);
-    await db.delete(issueTreeHolds);
-    await db.delete(issues);
-    await db.delete(heartbeatRunEvents);
-    await db.delete(heartbeatRuns);
-    await db.delete(agentWakeupRequests);
-    await db.delete(agentRuntimeState);
-    await db.delete(agents);
-    await db.delete(companies);
+    await waitForCondition(async () => {
+      const runningAgents = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(agents)
+        .where(eq(agents.status, "running"))
+        .then((rows) => rows[0]?.count ?? 0);
+      return runningAgents === 0;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await db.execute(sql.raw(`
+      SET client_min_messages TO WARNING;
+      TRUNCATE TABLE
+        "activity_log",
+        "company_skills",
+        "issue_comments",
+        "issue_documents",
+        "document_revisions",
+        "documents",
+        "issue_relations",
+        "issue_tree_holds",
+        "issues",
+        "heartbeat_run_events",
+        "heartbeat_runs",
+        "agent_wakeup_requests",
+        "agent_runtime_state",
+        "agents",
+        "companies"
+      CASCADE;
+      RESET client_min_messages;
+    `));
   });
 
   afterAll(async () => {

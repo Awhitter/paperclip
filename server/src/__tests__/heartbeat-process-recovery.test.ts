@@ -1,18 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
-import { eq, or, inArray } from "drizzle-orm";
+import { eq, or, inArray, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
-  activityLog,
   agents,
-  agentRuntimeState,
   agentWakeupRequests,
-  companySkills,
   companies,
   createDb,
   documentRevisions,
   documents,
-  heartbeatRunEvents,
   heartbeatRuns,
   issueComments,
   issueDocuments,
@@ -58,6 +54,16 @@ vi.mock("../adapters/index.ts", async () => {
     ...actual,
     getServerAdapter: vi.fn(() => ({
       supportsLocalAgentJwt: false,
+      sessionManagement: {
+        supportsSessionResume: true,
+        nativeContextManagement: "confirmed",
+        defaultSessionCompaction: {
+          enabled: true,
+          maxSessionRuns: 0,
+          maxRawInputTokens: 0,
+          maxSessionAgeHours: 0,
+        },
+      },
       execute: mockAdapterExecute,
     })),
   };
@@ -298,42 +304,36 @@ describeEmbeddedPostgres("heartbeat orphaned process recovery", () => {
       }
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await waitForValue(async () => {
+      const runningAgents = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(agents)
+        .where(eq(agents.status, "running"))
+        .then((rows) => rows[0]?.count ?? 0);
+      return runningAgents === 0 ? true : null;
+    }, 5_000);
     await waitForHeartbeatIdle(db, 5_000);
     await new Promise((resolve) => setTimeout(resolve, 100));
-    await db.delete(activityLog);
-    await db.delete(agentRuntimeState);
-    await db.delete(companySkills);
-    await db.delete(issueComments);
-    await db.delete(issueDocuments);
-    await db.delete(documentRevisions);
-    await db.delete(documents);
-    await db.delete(issueRelations);
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      await db.delete(issueComments);
-      await db.delete(issueDocuments);
-      try {
-        await db.delete(issues);
-        break;
-      } catch (error) {
-        if (attempt === 4) throw error;
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
-    }
-    await db.delete(heartbeatRunEvents);
-    await db.delete(heartbeatRuns);
-    await db.delete(agentWakeupRequests);
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      await db.delete(agentRuntimeState);
-      try {
-        await db.delete(agents);
-        break;
-      } catch (error) {
-        if (attempt === 4) throw error;
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
-    }
-    await db.delete(companies);
+    await db.execute(sql.raw(`
+      SET client_min_messages TO WARNING;
+      TRUNCATE TABLE
+        "activity_log",
+        "agent_runtime_state",
+        "company_skills",
+        "issue_comments",
+        "issue_documents",
+        "document_revisions",
+        "documents",
+        "issue_relations",
+        "issues",
+        "heartbeat_run_events",
+        "heartbeat_runs",
+        "agent_wakeup_requests",
+        "agents",
+        "companies"
+      CASCADE;
+      RESET client_min_messages;
+    `));
   });
 
   afterAll(async () => {

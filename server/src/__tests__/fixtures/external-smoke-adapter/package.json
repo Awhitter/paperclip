@@ -1,0 +1,12 @@
+{
+  "name": "paperclip-external-smoke-adapter",
+  "version": "1.2.3",
+  "type": "module",
+  "paperclip": {
+    "adapterUiParser": "1.0.0"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./ui-parser": "./ui-parser.js"
+  }
+}

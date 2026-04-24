@@ -21,7 +21,8 @@ GitHub Actions owns `pnpm-lock.yaml`.
 
 - Do not commit `pnpm-lock.yaml` in pull requests.
 - Pull request CI validates dependency resolution when manifests change.
-- Pushes to `master` regenerate `pnpm-lock.yaml` with `pnpm install --lockfile-only --no-frozen-lockfile`, commit it back if needed, and then run verification with `--frozen-lockfile`.
+- Pull requests keep `pnpm-lock.yaml` out of the diff. CI generates a job-local lockfile from the manifest changes, then installs with `--frozen-lockfile` against that generated lockfile.
+- Pushes to `master` regenerate `pnpm-lock.yaml` through the lockfile refresh workflow and open a lockfile-only PR when needed.
 
 ## Start Dev
 
@@ -471,6 +472,14 @@ Migration helper for existing inline env secrets:
 pnpm secrets:migrate-inline-env         # dry run
 pnpm secrets:migrate-inline-env --apply # apply migration
 ```
+
+Local process argv hygiene check:
+
+```sh
+pnpm check:process-secrets
+```
+
+This scans running process command lines for secret-looking flags or env assignments such as `--api-secret ...`, `--token ...`, or `CLOUDINARY_API_SECRET=...`. It reports only PIDs and pattern labels; move long-lived values into environment variables or Paperclip secret refs before launching local MCP/adapters.
 
 ## Company Deletion Toggle
 

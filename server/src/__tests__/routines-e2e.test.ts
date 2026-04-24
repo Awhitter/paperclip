@@ -140,6 +140,24 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
   });
 
   async function createApp(actor: Record<string, unknown>) {
+    vi.resetModules();
+    vi.doUnmock("@paperclipai/shared/telemetry");
+    vi.doUnmock("../telemetry.js");
+    vi.doUnmock("../services/access.js");
+    vi.doUnmock("../services/issues.js");
+    vi.doUnmock("../services/companies.js");
+    vi.doUnmock("../services/projects.js");
+    vi.doUnmock("../services/company-skills.js");
+    vi.doUnmock("../services/assets.js");
+    vi.doUnmock("../services/agent-instructions.js");
+    vi.doUnmock("../services/workspace-runtime.js");
+    vi.doUnmock("../services/index.js");
+    vi.doUnmock("../services/routines.js");
+    vi.doUnmock("../routes/routines.js");
+    vi.doUnmock("../routes/authz.js");
+    vi.doUnmock("../middleware/index.js");
+    registerRoutineServiceMock();
+    vi.doMock("../routes/authz.js", async () => vi.importActual("../routes/authz.js"));
     const [{ routineRoutes }, { errorHandler }] = await Promise.all([
       vi.importActual<typeof import("../routes/routines.js")>("../routes/routines.js"),
       vi.importActual<typeof import("../middleware/index.js")>("../middleware/index.js"),

@@ -109,7 +109,9 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+          pnpm install --frozen-lockfile
 
       - name: Typecheck
         run: pnpm -r typecheck
@@ -147,7 +149,9 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+          pnpm install --frozen-lockfile
 
       - name: Build
         run: pnpm build

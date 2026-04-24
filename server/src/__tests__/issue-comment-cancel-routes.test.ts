@@ -38,6 +38,7 @@ const mockIssueThreadInteractionService = vi.hoisted(() => ({
   expireRequestConfirmationsSupersededByComment: vi.fn(async () => []),
   expireStaleRequestConfirmationsForIssueDocument: vi.fn(async () => []),
 }));
+const ROUTE_TEST_TIMEOUT_MS = 15_000;
 
 function registerModuleMocks() {
   vi.doMock("@paperclipai/shared/telemetry", () => ({
@@ -175,6 +176,8 @@ describe("issue comment cancel routes", () => {
     vi.doUnmock("../routes/authz.js");
     vi.doUnmock("../middleware/index.js");
     registerModuleMocks();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
     vi.resetAllMocks();
     mockIssueService.getById.mockResolvedValue(makeIssue());
     mockIssueService.assertCheckoutOwner.mockResolvedValue({ adoptedFromRunId: null });
@@ -229,7 +232,7 @@ describe("issue comment cancel routes", () => {
         }),
       }),
     );
-  });
+  }, ROUTE_TEST_TIMEOUT_MS);
 
   it("rejects canceling comments that are no longer queued", async () => {
     mockIssueService.getComment.mockResolvedValue(

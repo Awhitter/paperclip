@@ -144,6 +144,11 @@ function createDb(requireBoardApprovalForNewAgents = false) {
 }
 
 async function createApp(db: Record<string, unknown> = createDb()) {
+  vi.resetModules();
+  vi.doUnmock("../routes/agents.js");
+  vi.doUnmock("../routes/authz.js");
+  vi.doUnmock("../middleware/index.js");
+  registerModuleMocks();
   const [{ agentRoutes }, { errorHandler }] = await Promise.all([
     vi.importActual<typeof import("../routes/agents.js")>("../routes/agents.js"),
     vi.importActual<typeof import("../middleware/index.js")>("../middleware/index.js"),

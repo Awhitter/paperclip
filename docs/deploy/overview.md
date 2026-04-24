@@ -40,7 +40,7 @@ Paperclip supports three deployment configurations, from zero-friction local to 
 
 - **Just trying Paperclip?** Use `local_trusted` (the default)
 - **Sharing with a team on private network?** Use `authenticated` + `private`
-- **Deploying to the cloud?** Use `authenticated` + `public`
+- **Deploying to the cloud?** Use `authenticated` + `public`; the first recommended hosted path is [Render](/deploy/render) with Docker, Postgres, and a persistent `/paperclip` disk.
 
 Set the mode during onboarding:
 

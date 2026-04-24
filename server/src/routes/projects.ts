@@ -282,16 +282,16 @@ export function projectRoutes(db: Db) {
     async (req, res) => {
       const id = req.params.id as string;
       const workspaceId = req.params.workspaceId as string;
+      assertNoAgentHostWorkspaceCommandMutation(
+        req,
+        collectProjectWorkspaceCommandPaths(req.body),
+      );
       const existing = await svc.getById(id);
       if (!existing) {
         res.status(404).json({ error: "Project not found" });
         return;
       }
       assertCompanyAccess(req, existing.companyId);
-      assertNoAgentHostWorkspaceCommandMutation(
-        req,
-        collectProjectWorkspaceCommandPaths(req.body),
-      );
       const workspaceExists = (await svc.listWorkspaces(id)).some((workspace) => workspace.id === workspaceId);
       if (!workspaceExists) {
         res.status(404).json({ error: "Project workspace not found" });

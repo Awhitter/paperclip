@@ -40,6 +40,8 @@ const mockInstanceSettingsApi = vi.hoisted(() => ({
   getExperimental: vi.fn(),
 }));
 
+const LARGE_LIST_TEST_TIMEOUT_MS = 15_000;
+
 vi.mock("../context/CompanyContext", () => ({
   useCompany: () => companyState,
 }));
@@ -402,7 +404,7 @@ describe("IssuesList", () => {
     act(() => {
       root.unmount();
     });
-  });
+  }, LARGE_LIST_TEST_TIMEOUT_MS);
 
   it("caps the first paint for large issue lists", async () => {
     const manyIssues = Array.from({ length: 220 }, (_, index) =>
@@ -432,7 +434,7 @@ describe("IssuesList", () => {
     act(() => {
       root.unmount();
     });
-  });
+  }, LARGE_LIST_TEST_TIMEOUT_MS);
 
   it("skips deferred row sizing for expanded parent rows with visible children", async () => {
     const parentIssue = createIssue({
