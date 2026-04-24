@@ -110,4 +110,58 @@ describe("RunTranscriptView", () => {
     expect(html).toMatch(/<li[^>]*>posted issue update<\/li>/);
     expect(html).not.toContain("result");
   });
+
+  it("keeps chat attachment read-back visible in transcript data and raw rendering", () => {
+    const entries: TranscriptEntry[] = [
+      {
+        kind: "tool_call",
+        ts: "2026-04-23T00:00:00.000Z",
+        name: "chat.attachments.read",
+        toolUseId: "attachment_read_1",
+        input: { maxBytes: 4096 },
+      },
+      {
+        kind: "tool_result",
+        ts: "2026-04-23T00:00:01.000Z",
+        toolUseId: "attachment_read_1",
+        toolName: "chat.attachments.read",
+        isError: false,
+        content: JSON.stringify({
+          attachments: [
+            {
+              id: "attachment-1",
+              originalFilename: "brief.txt",
+              content: {
+                encoding: "utf-8",
+                text: "Attachment read-back proof text",
+              },
+            },
+          ],
+        }),
+      },
+    ];
+
+    const blocks = normalizeTranscript(entries, false);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      type: "tool_group",
+      items: [
+        {
+          name: "Chat.Attachments.Read",
+          status: "completed",
+          result: expect.stringContaining("Attachment read-back proof text"),
+        },
+      ],
+    });
+
+    const html = renderToStaticMarkup(
+      <ThemeProvider>
+        <RunTranscriptView mode="raw" entries={entries} />
+      </ThemeProvider>,
+    );
+
+    expect(html).toContain("chat.attachments.read");
+    expect(html).toContain("brief.txt");
+    expect(html).toContain("Attachment read-back proof text");
+  });
 });

@@ -137,6 +137,7 @@ import {
   type SuggestTasksInteraction,
   type IssueTreeControlMode,
 } from "@paperclipai/shared";
+import { IssueWorkProductsSection } from "@/components/IssueWorkProductsSection";
 
 type CommentReassignment = IssueCommentReassignment;
 type ActionableIssueThreadInteraction = SuggestTasksInteraction | RequestConfirmationInteraction;
@@ -3316,6 +3317,8 @@ export function IssueDetail() {
         project={resolvedProject}
         onUpdate={(data) => updateIssue.mutate(data)}
       />
+
+      <IssueWorkProductsSection workProducts={issue.workProducts ?? []} />
 
       <Separator />
 

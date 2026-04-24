@@ -41,7 +41,6 @@ export const LEGACY_SESSIONED_ADAPTER_TYPES = new Set([
   "codex_local",
   "cursor",
   "gemini_local",
-  "hermes_local",
   "opencode_local",
   "pi_local",
 ]);
@@ -76,11 +75,6 @@ export const ADAPTER_SESSION_MANAGEMENT: Record<string, AdapterSessionManagement
     supportsSessionResume: true,
     nativeContextManagement: "unknown",
     defaultSessionCompaction: DEFAULT_SESSION_COMPACTION_POLICY,
-  },
-  hermes_local: {
-    supportsSessionResume: true,
-    nativeContextManagement: "confirmed",
-    defaultSessionCompaction: ADAPTER_MANAGED_SESSION_POLICY,
   },
 };
 
@@ -146,8 +140,12 @@ export function readSessionCompactionOverride(runtimeConfig: unknown): Partial<S
 export function resolveSessionCompactionPolicy(
   adapterType: string | null | undefined,
   runtimeConfig: unknown,
+  adapterSessionManagementOverride?: AdapterSessionManagement | null,
 ): ResolvedSessionCompactionPolicy {
-  const adapterSessionManagement = getAdapterSessionManagement(adapterType);
+  const adapterSessionManagement =
+    adapterSessionManagementOverride === undefined
+      ? getAdapterSessionManagement(adapterType)
+      : adapterSessionManagementOverride;
   const explicitOverride = readSessionCompactionOverride(runtimeConfig);
   const hasExplicitOverride = Object.keys(explicitOverride).length > 0;
   const fallbackEnabled = Boolean(adapterType && LEGACY_SESSIONED_ADAPTER_TYPES.has(adapterType));

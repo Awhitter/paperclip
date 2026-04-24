@@ -44,6 +44,7 @@ diagnostics/
 .paperclip-local/
 /.idea/
 /.agents/
+.axon/
 
 # Doc maintenance cursor
 .doc-review-cursor

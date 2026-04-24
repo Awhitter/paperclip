@@ -92,7 +92,7 @@ function createStorageService(contentType = "image/png"): TestStorageService {
 }
 
 async function createApp(storage: ReturnType<typeof createStorageService>) {
-  const { assetRoutes } = await vi.importActual<typeof import("../routes/assets.js")>("../routes/assets.js");
+  const { assetRoutes } = await import("../routes/assets.js");
   const app = express();
   app.use((req, _res, next) => {
     req.actor = {
@@ -169,6 +169,8 @@ describe("POST /api/companies/:companyId/assets/images", () => {
 describe("POST /api/companies/:companyId/logo", () => {
   beforeEach(() => {
     vi.resetModules();
+    vi.doUnmock("../services/activity-log.js");
+    vi.doUnmock("../services/assets.js");
     vi.doUnmock("../services/index.js");
     vi.doUnmock("../routes/assets.js");
     vi.doUnmock("../routes/authz.js");

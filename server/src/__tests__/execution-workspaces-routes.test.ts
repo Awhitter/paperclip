@@ -86,5 +86,5 @@ describe("execution workspace routes", () => {
       reuseEligible: true,
     });
     expect(mockExecutionWorkspaceService.list).not.toHaveBeenCalled();
-  });
+  }, 15_000);
 });

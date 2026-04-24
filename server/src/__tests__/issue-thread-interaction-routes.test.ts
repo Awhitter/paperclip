@@ -121,6 +121,11 @@ async function createApp(actor: Record<string, unknown> = {
   source: "local_implicit",
   isInstanceAdmin: false,
 }) {
+  vi.resetModules();
+  vi.doUnmock("../routes/issues.js");
+  vi.doUnmock("../routes/authz.js");
+  vi.doUnmock("../middleware/index.js");
+  registerModuleMocks();
   const [{ issueRoutes }, { errorHandler }] = await Promise.all([
     import("../routes/issues.js"),
     import("../middleware/index.js"),

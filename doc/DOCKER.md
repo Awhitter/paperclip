@@ -121,6 +121,29 @@ Granular overrides remain available if needed (`PAPERCLIP_AUTH_PUBLIC_BASE_URL`,
 
 Set `PAPERCLIP_ALLOWED_HOSTNAMES` explicitly only when you need additional hostnames beyond the public URL host (for example Tailscale/LAN aliases or multiple private hostnames).
 
+## Render First Live Deployment
+
+Use the root `render.yaml` for the first public, authenticated team deployment. It runs the Docker image, Render Postgres, and a persistent `/paperclip` disk.
+
+Render prompts for the values marked `sync: false`:
+
+- `PAPERCLIP_PUBLIC_URL`
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `KATAILYST_MCP_URL`
+- `KATAILYST_MCP_TOKEN`
+- `KATAILYST_PAT`
+
+After the first healthy deploy, open a Render shell and create the first admin invite:
+
+```sh
+pnpm paperclipai auth bootstrap-ceo \
+  --base-url "$PAPERCLIP_PUBLIC_URL" \
+  --db-url "$DATABASE_URL"
+```
+
+Then open the printed invite URL, create the first admin user, keep sign-up disabled, and invite teammates from the board.
+
 ## Claude + Codex Local Adapters in Docker
 
 The image pre-installs:

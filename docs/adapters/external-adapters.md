@@ -5,6 +5,10 @@ summary: Build, package, and distribute adapters as plugins without modifying Pa
 
 Paperclip supports external adapter plugins that can be installed from npm packages or local directories. External adapters work exactly like built-in adapters — they execute agents, parse output, and render transcripts — but they live in their own package and don't require changes to Paperclip's source code.
 
+In this fork, Hermes is intentionally external-only. Install `@henkey/hermes-paperclip-adapter` or a local adapter package through the Adapter Manager; Paperclip core does not import or register `hermes_local` directly.
+
+The Adapter Manager is the supported install path for fork-local Hermes and other external adapters. It shows whether each external adapter is loaded, where it came from (npm or local path), and whether Paperclip can see its optional schema, UI parser, model detection, session management, and lifecycle hooks. Reload and reinstall actions invalidate server/client parser and schema caches so local package iteration is visible without a full Paperclip restart.
+
 ## Built-in vs External
 
 | | Built-in | External |
@@ -14,6 +18,16 @@ Paperclip supports external adapter plugins that can be installed from npm packa
 | UI parser | Static import at build time | Dynamically loaded from API (see [UI Parser](/adapters/adapter-ui-parser)) |
 | Distribution | Ships with Paperclip | Published to npm or linked via `file:` |
 | Updates | Requires Paperclip release | Independent versioning |
+
+External packages may also expose optional capabilities:
+
+| Capability | Contract |
+|------------|----------|
+| Config schema | `getConfigSchema()` on the server adapter; rendered generically in agent config forms |
+| UI parser | `exports["./ui-parser"]` plus `paperclip.adapterUiParser` contract metadata |
+| Model detection | `detectModel()` on the server adapter |
+| Session management | `sessionManagement` on the server adapter, or host-provided session management for known adapter types |
+| Lifecycle hooks | optional server hooks such as `onHireApproved()` |
 
 ## Quick Start
 
@@ -264,7 +278,7 @@ Check levels:
 # Settings → Adapters → Install from npm → "my-paperclip-adapter"
 
 # Or via API
-curl -X POST http://localhost:3102/api/adapters \
+curl -X POST http://localhost:3102/api/adapters/install \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"packageName": "my-paperclip-adapter"}'
@@ -273,13 +287,13 @@ curl -X POST http://localhost:3102/api/adapters \
 ### From local directory
 
 ```sh
-curl -X POST http://localhost:3102/api/adapters \
+curl -X POST http://localhost:3102/api/adapters/install \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"localPath": "/home/user/my-adapter"}'
+  -d '{"packageName": "/home/user/my-adapter", "isLocalPath": true}'
 ```
 
-Local adapters are symlinked into Paperclip's adapter directory. Changes to the source are picked up on server restart.
+Local adapters are loaded from the supplied directory. Use Reload in the Adapter Manager after rebuilding the local package to hot-swap the server module and UI parser.
 
 ### Via adapter-plugins.json
 
@@ -384,6 +398,83 @@ Other Paperclip users can then install your adapter by package name from the UI 
 - Configure network access controls if the runtime supports them
 - Always enforce timeout and grace period — don't let agents run forever
 - The UI parser module runs in a browser sandbox — it must have zero runtime imports and no side effects
+
+## Katailyst and Agent Canvas
+
+Paperclip should connect to Katailyst and Agent Canvas through adapter/runtime configuration, not core imports.
+
+### Katailyst
+
+Katailyst is the capability and context registry. Configure it with environment secret refs at the company, project, or agent layer:
+
+| Key | Purpose |
+|-----|---------|
+| `KATAILYST_MCP_URL` | MCP endpoint for capability/context lookup |
+| `KATAILYST_MCP_TOKEN` | Bearer token for MCP access |
+| `KATAILYST_PAT` | Personal access token when the adapter uses Katailyst APIs directly |
+
+Adapters should pass Paperclip trace IDs on every Katailyst lookup or tool call:
+
+```json
+{
+  "paperclip_run_id": "run_...",
+  "paperclip_issue_id": "issue_...",
+  "paperclip_agent_id": "agent_...",
+  "paperclip_company_id": "company_..."
+}
+```
+
+The adapter should emit `adapter.invoke` metadata that names the configured secret refs and endpoint source without exposing token values. Runtime transcripts should show the Katailyst capability name, selected prompt/context bundle, and trace ID so an operator can audit why an agent received a given tool or instruction.
+
+### Agent Canvas
+
+Agent Canvas should be packaged as an external adapter or gateway adapter. Paperclip remains the control plane: it owns governance, checkout, run status, workspaces, approvals, budgets, and the canonical transcript. Canvas receives run/session context and returns status, widgets, artifact links, and deep links.
+
+Adapter input to Canvas:
+
+```json
+{
+  "paperclipRun": {
+    "id": "run_...",
+    "companyId": "company_...",
+    "agentId": "agent_...",
+    "issueId": "issue_...",
+    "statusCallbackUrl": "https://paperclip.example/api/..."
+  },
+  "workspace": {
+    "source": "project_workspace",
+    "cwd": "/repo",
+    "repoUrl": "https://github.com/org/repo",
+    "repoRef": "main",
+    "branchName": "paperclip/PAP-123"
+  },
+  "prompt": {
+    "templateId": "agent-template-or-bundle-key",
+    "preview": "redacted operator-visible prompt preview"
+  }
+}
+```
+
+Canvas output back to Paperclip:
+
+```json
+{
+  "status": "running",
+  "widgets": [
+    { "type": "task_board", "title": "Canvas Tasks", "url": "https://canvas.example/runs/run_..." }
+  ],
+  "artifacts": [
+    { "label": "Design review", "url": "https://canvas.example/artifacts/..." }
+  ],
+  "deepLinks": [
+    { "label": "Open in Canvas", "url": "https://canvas.example/runs/run_..." }
+  ]
+}
+```
+
+The Canvas adapter should expose a config schema for endpoint URL, auth secret refs, widget mode, and status callback behavior. Its `ui-parser.js` should turn Canvas status events into transcript entries, keeping Paperclip usable even when the Canvas UI is not open.
+
+External adapters that bridge either system should expose their config schema and UI parser so operators can see connection settings and transcript events without Paperclip-specific source changes.
 
 ## Next Steps
 

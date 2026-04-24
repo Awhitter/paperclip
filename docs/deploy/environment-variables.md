@@ -19,6 +19,10 @@ All environment variables that Paperclip uses for server configuration.
 | `PAPERCLIP_DEPLOYMENT_MODE` | `local_trusted` | Runtime mode override |
 | `PAPERCLIP_DEPLOYMENT_EXPOSURE` | `private` | Exposure policy when deployment mode is `authenticated` |
 | `PAPERCLIP_API_URL` | (auto-derived) | Paperclip API base URL. When set externally (e.g., via Kubernetes ConfigMap, load balancer, or reverse proxy), the server preserves the value instead of deriving it from the listen host and port. Useful for deployments where the public-facing URL differs from the local bind address. |
+| `PAPERCLIP_PUBLIC_URL` | (unset) | Canonical browser URL for authenticated deployments. Public deployments should set this to the HTTPS URL so auth callbacks, bootstrap invites, and allowed hostnames line up. |
+| `PAPERCLIP_AUTH_DISABLE_SIGN_UP` | `false` | Disable open sign-up. Use bootstrap and invite flows for team access. |
+| `PAPERCLIP_MIGRATION_AUTO_APPLY` | `false` | Apply pending migrations automatically on startup. Useful for managed Docker deployments. |
+| `PAPERCLIP_MIGRATION_PROMPT` | `auto` | Set to `never` for non-interactive deployments. |
 
 ## Secrets
 
@@ -52,3 +56,11 @@ These are set automatically by the server when invoking agents:
 |----------|-------------|
 | `ANTHROPIC_API_KEY` | Anthropic API key (for Claude Local adapter) |
 | `OPENAI_API_KEY` | OpenAI API key (for Codex Local adapter) |
+
+## Ecosystem Integrations
+
+| Variable | Description |
+|----------|-------------|
+| `KATAILYST_MCP_URL` | Katailyst MCP endpoint for registry, graph, context, skills, prompts, tools, and memory |
+| `KATAILYST_MCP_TOKEN` | Bearer token for Katailyst MCP access |
+| `KATAILYST_PAT` | Optional Katailyst API token for adapters that call Katailyst APIs directly |

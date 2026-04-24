@@ -76,6 +76,12 @@ interface AdapterInfo {
   loaded: boolean;
   disabled: boolean;
   capabilities: AdapterCapabilities;
+  hasConfigSchema: boolean;
+  hasUiParser: boolean;
+  hasDetectModel: boolean;
+  hasSessionManagement: boolean;
+  hasLifecycleHooks: boolean;
+  loadError?: string;
   /** True when an external plugin has replaced a built-in adapter of the same type. */
   overriddenBuiltin?: boolean;
   /** True when the external override for a builtin type is currently paused. */
@@ -122,6 +128,20 @@ function buildAdapterCapabilities(adapter: ServerAdapterModule): AdapterCapabili
   };
 }
 
+function hasExternalUiParser(adapterType: string, externalRecord: AdapterPluginRecord | undefined): boolean {
+  if (!externalRecord) return false;
+  if (getUiParserSource(adapterType)) return true;
+  try {
+    return Boolean(getOrExtractUiParserSource(adapterType));
+  } catch (err) {
+    logger.warn(
+      { err, type: adapterType, packageName: externalRecord.packageName },
+      "Failed to inspect external adapter UI parser status",
+    );
+    return false;
+  }
+}
+
 function buildAdapterInfo(adapter: ServerAdapterModule, externalRecord: AdapterPluginRecord | undefined, disabledSet: Set<string>): AdapterInfo {
   const fromDisk = externalRecord ? readAdapterPackageVersionFromDisk(externalRecord) : undefined;
   return {
@@ -132,12 +152,43 @@ function buildAdapterInfo(adapter: ServerAdapterModule, externalRecord: AdapterP
     loaded: true, // If it's in the registry, it's loaded
     disabled: disabledSet.has(adapter.type),
     capabilities: buildAdapterCapabilities(adapter),
+    hasConfigSchema: Boolean(adapter.getConfigSchema),
+    hasUiParser: hasExternalUiParser(adapter.type, externalRecord),
+    hasDetectModel: Boolean(adapter.detectModel),
+    hasSessionManagement: Boolean(adapter.sessionManagement),
+    hasLifecycleHooks: Boolean(adapter.onHireApproved),
     overriddenBuiltin: externalRecord ? BUILTIN_ADAPTER_TYPES.has(adapter.type) : undefined,
     overridePaused: BUILTIN_ADAPTER_TYPES.has(adapter.type) ? isOverridePaused(adapter.type) : undefined,
     // Prefer on-disk package.json so the UI reflects bumps without relying on store-only fields.
     version: fromDisk ?? externalRecord?.version,
     packageName: externalRecord?.packageName,
     isLocalPath: externalRecord?.localPath ? true : undefined,
+  };
+}
+
+function buildUnloadedExternalAdapterInfo(record: AdapterPluginRecord, disabledSet: Set<string>): AdapterInfo {
+  return {
+    type: record.type,
+    label: record.type,
+    source: "external",
+    modelsCount: 0,
+    loaded: false,
+    disabled: disabledSet.has(record.type),
+    capabilities: {
+      supportsInstructionsBundle: false,
+      supportsSkills: false,
+      supportsLocalAgentJwt: false,
+      requiresMaterializedRuntimeSkills: false,
+    },
+    hasConfigSchema: false,
+    hasUiParser: hasExternalUiParser(record.type, record),
+    hasDetectModel: false,
+    hasSessionManagement: false,
+    hasLifecycleHooks: false,
+    loadError: "Adapter is installed but not loaded. Reload it, reinstall it, or check the server logs for the package import error.",
+    version: readAdapterPackageVersionFromDisk(record) ?? record.version,
+    packageName: record.packageName,
+    isLocalPath: record.localPath ? true : undefined,
   };
 }
 
@@ -209,7 +260,15 @@ export function adapterRoutes() {
 
     const result: AdapterInfo[] = registeredAdapters.map((adapter) =>
       buildAdapterInfo(adapter, externalRecords.get(adapter.type), disabledSet),
-    ).sort((a, b) => a.type.localeCompare(b.type));
+    );
+
+    for (const record of externalRecords.values()) {
+      if (!registeredAdapters.some((adapter) => adapter.type === record.type)) {
+        result.push(buildUnloadedExternalAdapterInfo(record, disabledSet));
+      }
+    }
+
+    result.sort((a, b) => a.type.localeCompare(b.type));
 
     res.json(result);
   });
@@ -293,14 +352,6 @@ export function adapterRoutes() {
 
       // Load and register the adapter (use canonicalName for path resolution)
       const adapterModule = await loadExternalAdapterPackage(canonicalName, moduleLocalPath);
-
-      // Check if this type conflicts with a built-in adapter
-      if (BUILTIN_ADAPTER_TYPES.has(adapterModule.type)) {
-        res.status(409).json({
-          error: `Adapter type "${adapterModule.type}" is a built-in adapter and cannot be overwritten.`,
-        });
-        return;
-      }
 
       // Check if already registered (indicates a reinstall/update)
       const existing = findServerAdapter(adapterModule.type);
@@ -429,14 +480,6 @@ export function adapterRoutes() {
       return;
     }
 
-    // Prevent removal of built-in adapters
-    if (BUILTIN_ADAPTER_TYPES.has(adapterType)) {
-      res.status(403).json({
-        error: `Cannot remove built-in adapter "${adapterType}".`,
-      });
-      return;
-    }
-
     // Check that the adapter exists in the registry
     const existing = findServerAdapter(adapterType);
     if (!existing) {
@@ -449,9 +492,15 @@ export function adapterRoutes() {
     // Check that it's an external adapter
     const externalRecord = getAdapterPluginByType(adapterType);
     if (!externalRecord) {
-      res.status(404).json({
-        error: `Adapter "${adapterType}" is not an externally installed adapter.`,
-      });
+      if (BUILTIN_ADAPTER_TYPES.has(adapterType)) {
+        res.status(403).json({
+          error: `Cannot remove built-in adapter "${adapterType}".`,
+        });
+      } else {
+        res.status(404).json({
+          error: `Adapter "${adapterType}" is not an externally installed adapter.`,
+        });
+      }
       return;
     }
 

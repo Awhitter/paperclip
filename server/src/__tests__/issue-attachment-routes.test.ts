@@ -105,24 +105,41 @@ type TestStorageService = StorageService & {
 
 function createStorageService(): TestStorageService {
   const calls: TestStorageService["__calls"] = {};
+  const objects = new Map<string, { companyId: string; body: Buffer; contentType: string }>();
   return {
     provider: "local_disk",
     __calls: calls,
     putFile: async (input) => {
       calls.putFile = input;
+      const objectKey = `${input.namespace}/${input.originalFilename ?? "upload"}`;
+      objects.set(objectKey, {
+        companyId: input.companyId,
+        body: input.body,
+        contentType: input.contentType,
+      });
       return {
       provider: "local_disk",
-      objectKey: `${input.namespace}/${input.originalFilename ?? "upload"}`,
+      objectKey,
       contentType: input.contentType,
       byteSize: input.body.length,
       sha256: "sha256-sample",
       originalFilename: input.originalFilename,
       };
     },
-    getObject: vi.fn(async () => ({
-      stream: Readable.from(Buffer.from("test")),
-      contentLength: 4,
-    })),
+    getObject: vi.fn(async (companyId: string, objectKey: string) => {
+      const object = objects.get(objectKey);
+      if (!object || object.companyId !== companyId) {
+        return {
+          stream: Readable.from(Buffer.from("test")),
+          contentLength: 4,
+        };
+      }
+      return {
+        stream: Readable.from(object.body),
+        contentLength: object.body.length,
+        contentType: object.contentType,
+      };
+    }),
     headObject: vi.fn(),
     deleteObject: vi.fn(),
   };
@@ -314,5 +331,99 @@ describe("issue attachment routes", () => {
         },
       ],
     });
+  });
+
+  it("uploads a comment-linked text attachment and reads it back for the current chat run", async () => {
+    const storage = createStorageService();
+    const attachments: ReturnType<typeof makeAttachment>[] = [];
+    const issueId = "11111111-1111-4111-8111-111111111111";
+    const commentId = "44444444-4444-4444-8444-444444444444";
+    const runId = "33333333-3333-4333-8333-333333333333";
+    const uploadedText = "Attachment read-back proof text from upload.";
+
+    mockIssueService.getById.mockResolvedValue({
+      id: issueId,
+      companyId: "company-1",
+      identifier: "PAP-1",
+    });
+    mockIssueService.getComment.mockResolvedValue({
+      id: commentId,
+      companyId: "company-1",
+      issueId,
+      authorAgentId: null,
+      authorUserId: "local-board",
+      body: "Please read the attached brief before answering.",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    mockHeartbeatService.getRun.mockResolvedValue({
+      id: runId,
+      companyId: "company-1",
+      agentId: "agent-1",
+      contextSnapshot: {
+        issueId,
+        wakeCommentIds: [commentId],
+      },
+    });
+    mockIssueService.createAttachment.mockImplementation(async (input) => {
+      const attachment = {
+        ...makeAttachment(input.contentType, input.originalFilename ?? "brief.txt"),
+        id: "uploaded-attachment-1",
+        issueId: input.issueId,
+        issueCommentId: input.issueCommentId,
+        objectKey: input.objectKey,
+        byteSize: input.byteSize,
+        sha256: input.sha256,
+        createdByUserId: input.createdByUserId,
+        createdByAgentId: input.createdByAgentId,
+      };
+      attachments.push(attachment);
+      return attachment;
+    });
+    mockIssueService.listAttachments.mockImplementation(async (requestedIssueId: string) =>
+      attachments.filter((attachment) => attachment.issueId === requestedIssueId),
+    );
+
+    const app = await createApp(storage);
+    const upload = await request(app)
+      .post(`/api/companies/company-1/issues/${issueId}/attachments`)
+      .field("issueCommentId", commentId)
+      .attach("file", Buffer.from(uploadedText), {
+        filename: "brief.txt",
+        contentType: "text/plain",
+      });
+
+    expect(upload.status, JSON.stringify(upload.body)).toBe(201);
+    expect(upload.body).toMatchObject({
+      id: "uploaded-attachment-1",
+      issueCommentId: commentId,
+      originalFilename: "brief.txt",
+      contentPath: "/api/attachments/uploaded-attachment-1/content",
+    });
+
+    const readBack = await request(app)
+      .get("/api/chat/attachments/read?maxBytes=256")
+      .set("X-Paperclip-Run-Id", runId);
+
+    expect(readBack.status, JSON.stringify(readBack.body)).toBe(200);
+    expect(readBack.body).toMatchObject({
+      runId,
+      issueId,
+      commentIds: [commentId],
+      attachments: [
+        {
+          id: "uploaded-attachment-1",
+          sources: ["linked_to_wake_comment"],
+          contentPath: "/api/attachments/uploaded-attachment-1/content",
+          content: {
+            encoding: "utf-8",
+            textReadable: true,
+            text: uploadedText,
+            truncated: false,
+          },
+        },
+      ],
+    });
+    expect(storage.getObject).toHaveBeenCalledWith("company-1", attachments[0].objectKey);
   });
 });

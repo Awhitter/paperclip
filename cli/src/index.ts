@@ -161,6 +161,7 @@ auth
   .option("--force", "Create new invite even if admin already exists", false)
   .option("--expires-hours <hours>", "Invite expiration window in hours", (value) => Number(value))
   .option("--base-url <url>", "Public base URL used to print invite link")
+  .option("--db-url <url>", "Database URL used to create the bootstrap invite")
   .action(bootstrapCeoInvite);
 
 registerClientAuthCommands(auth);
