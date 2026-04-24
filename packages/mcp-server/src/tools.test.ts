@@ -266,6 +266,29 @@ describe("paperclip MCP tools", () => {
     });
   });
 
+  it("reads chat attachments with current run id on a GET request", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      mockJsonResponse({ attachments: [{ id: "attachment-1", content: { text: "hello" } }] }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const tool = getTool("chat.attachments.read");
+    const response = await tool.execute({
+      maxBytes: 4096,
+      includeContent: true,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(String(url)).toBe("http://localhost:3100/api/chat/attachments/read?includeContent=true&maxBytes=4096");
+    expect(init.method).toBe("GET");
+    expect((init.headers as Record<string, string>)["Authorization"]).toBe("Bearer token-123");
+    expect((init.headers as Record<string, string>)["X-Paperclip-Run-Id"]).toBe(
+      "33333333-3333-3333-3333-333333333333",
+    );
+    expect(response.content[0]?.text).toContain("attachment-1");
+  });
+
   it("creates approvals with the expected company-scoped payload", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       mockJsonResponse({ id: "approval-1" }),

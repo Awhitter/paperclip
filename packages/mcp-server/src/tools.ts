@@ -221,6 +221,16 @@ async function getIssueWorkspaceRuntime(client: PaperclipApiClient, issueId: str
   };
 }
 
+const chatAttachmentsReadSchema = z.object({
+  runId: z.string().min(1).optional(),
+  issueId: z.string().min(1).optional(),
+  commentId: z.string().min(1).optional(),
+  attachmentId: z.string().min(1).optional(),
+  includeContent: z.boolean().optional(),
+  includeBinaryBase64: z.boolean().optional(),
+  maxBytes: z.number().int().positive().max(1024 * 1024).optional(),
+});
+
 export function createToolDefinitions(client: PaperclipApiClient): ToolDefinition[] {
   return [
     makeTool(
@@ -299,6 +309,25 @@ export function createToolDefinitions(client: PaperclipApiClient): ToolDefinitio
       z.object({ issueId: issueIdSchema, commentId: z.string().uuid() }),
       async ({ issueId, commentId }) =>
         client.requestJson("GET", `/issues/${encodeURIComponent(issueId)}/comments/${encodeURIComponent(commentId)}`),
+    ),
+    makeTool(
+      "chat.attachments.read",
+      "Read uploaded chat/issue attachments for the current Paperclip run. Defaults to PAPERCLIP_RUN_ID and returns bounded text content for text-readable attachments plus metadata for binary files.",
+      chatAttachmentsReadSchema,
+      async ({ runId, issueId, commentId, attachmentId, includeContent, includeBinaryBase64, maxBytes }) => {
+        const params = new URLSearchParams();
+        if (runId) params.set("runId", runId);
+        if (issueId) params.set("issueId", issueId);
+        if (commentId) params.set("commentId", commentId);
+        if (attachmentId) params.set("attachmentId", attachmentId);
+        if (includeContent !== undefined) params.set("includeContent", String(includeContent));
+        if (includeBinaryBase64 !== undefined) params.set("includeBinaryBase64", String(includeBinaryBase64));
+        if (maxBytes !== undefined) params.set("maxBytes", String(maxBytes));
+        const qs = params.toString();
+        return client.requestJson("GET", `/chat/attachments/read${qs ? `?${qs}` : ""}`, {
+          includeRunId: true,
+        });
+      },
     ),
     makeTool(
       "paperclipListIssueApprovals",

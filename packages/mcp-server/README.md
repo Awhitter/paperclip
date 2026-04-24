@@ -41,6 +41,7 @@ Read tools:
 - `paperclipGetHeartbeatContext`
 - `paperclipListComments`
 - `paperclipGetComment`
+- `chat.attachments.read`
 - `paperclipListIssueApprovals`
 - `paperclipListDocuments`
 - `paperclipGetDocument`
