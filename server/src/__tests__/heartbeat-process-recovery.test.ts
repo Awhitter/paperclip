@@ -321,6 +321,9 @@ describeEmbeddedPostgres("heartbeat orphaned process recovery", () => {
       }
     }
     await db.delete(heartbeatRunEvents);
+    // Background heartbeat continuations can add run-linked activity after the
+    // early activity cleanup; clear it again before deleting heartbeat runs.
+    await db.delete(activityLog);
     await db.delete(heartbeatRuns);
     await db.delete(agentWakeupRequests);
     for (let attempt = 0; attempt < 5; attempt += 1) {

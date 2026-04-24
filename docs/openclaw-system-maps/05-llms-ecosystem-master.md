@@ -464,7 +464,7 @@ For each major repo, this document should answer:
 ### sidecar-system
 - **Repo:** `Awhitter/sidecar-system`
 - **GitHub:** `https://github.com/Awhitter/sidecar-system`
-- **Local:** `/Users/alecwhitters/hlt/sidecar`
+- **Local:** `~/hlt/sidecar`
 - **Live:** `https://sidecar-system.vercel.app`
 - **Alt live:** `https://sidecar-system-work.vercel.app`
 - **Last verified:** 2026-04-24
@@ -484,7 +484,7 @@ For each major repo, this document should answer:
 ### MasteryPublishing
 - **Repo:** `Awhitter/MasteryPublishing`
 - **GitHub:** `https://github.com/Awhitter/MasteryPublishing`
-- **Local:** `/Users/alecwhitters/hlt/mastery-publishing`
+- **Local:** `~/hlt/mastery-publishing`
 - **Legacy live alias:** `https://v0-next-js-content-engine.vercel.app`
 - **Public route family:** `https://hltmastery.com/nursing/resources`
 - **Last verified:** 2026-04-24
@@ -503,7 +503,7 @@ For each major repo, this document should answer:
 
 ### Multimedia Mastery
 - **Repo or product:** `Awhitter/Multimedia4Mastery` and local multimedia-mastery-core naming family
-- **Local:** `/Users/alecwhitters/hlt/multimedia-mastery`
+- **Local:** `~/hlt/multimedia-mastery`
 - **Live:** `https://multimediamastery.vercel.app`
 - **Last verified:** 2026-04-24
 - **Role:** media-native production lane
@@ -1191,10 +1191,10 @@ Should say:
 This file should be maintained once and propagated everywhere.
 
 ### Current canonical source
-- `/Users/alecwhitters/Documents/Obsidian Vault/OpenClaw/System Maps/05-llms-ecosystem-master.md`
+- `Obsidian/OpenClaw/System Maps/05-llms-ecosystem-master.md`
 
 ### Current sync script
-- `/Users/alecwhitters/.openclaw/workspace/system/sync-llms-to-repos.sh`
+- `~/.openclaw/workspace/system/sync-llms-to-repos.sh`
 
 ### Current generated outputs
 Each target repo receives:

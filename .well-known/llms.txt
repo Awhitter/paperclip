@@ -7,11 +7,11 @@
 - **What this IS**: Governance plane for agents (HLT fork): companies, goals, budgets, approvals, audit log. Does not execute — coordinates adapters.
 - **Live URL**: n/a (local; branch session-2026-04-16-mastra-gateway-adapter-wip)
 - **Local run**: `pnpm -r dev`
-- **Env vars this repo reads**: DATABASE_URL (separate Supabase), adapter-specific env (CLAUDE_*, CODEX_*, MASTRA_*). Never paste values — resolution via `kb:katailyst-vault-access-pattern`.
+- **Env vars this repo reads**: DATABASE_URL (separate Supabase), adapter-specific env (CLAUDE_*, CODEX_*, MASTRA_*), optional Langfuse operational tracing (`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`, `LANGFUSE_RECORD_IO=false`). Never paste values — resolution via `kb:katailyst-vault-access-pattern`.
 
 ## Repo-specific note
 
-You are currently inside **Paperclip**, the Mastra-gateway-adapter lane. Parked on session branch with adapter scaffold complete but unregistered in Paperclip core. Six release-focused GitHub workflows; one of the more CI-mature non-katailyst repos.
+You are currently inside **Paperclip**, the agent-company governance plane. `master` is clean and ships central heartbeat-run Langfuse readiness/tracing; the large Mastra gateway adapter WIP remains isolated on `session-2026-04-16-mastra-gateway-adapter-wip` until it has its own release gate. Six release-focused GitHub workflows; one of the more CI-mature non-katailyst repos.
 
 ### Inspect first in this repo
 - adapter scaffold
@@ -494,7 +494,7 @@ For each major repo, this document should answer:
 ### sidecar-system
 - **Repo:** `Awhitter/sidecar-system`
 - **GitHub:** `https://github.com/Awhitter/sidecar-system`
-- **Local:** `/Users/alecwhitters/hlt/sidecar`
+- **Local:** `~/hlt/sidecar`
 - **Live:** `https://sidecar-system.vercel.app`
 - **Alt live:** `https://sidecar-system-work.vercel.app`
 - **Last verified:** 2026-04-24
@@ -514,7 +514,7 @@ For each major repo, this document should answer:
 ### MasteryPublishing
 - **Repo:** `Awhitter/MasteryPublishing`
 - **GitHub:** `https://github.com/Awhitter/MasteryPublishing`
-- **Local:** `/Users/alecwhitters/hlt/mastery-publishing`
+- **Local:** `~/hlt/mastery-publishing`
 - **Legacy live alias:** `https://v0-next-js-content-engine.vercel.app`
 - **Public route family:** `https://hltmastery.com/nursing/resources`
 - **Last verified:** 2026-04-24
@@ -533,7 +533,7 @@ For each major repo, this document should answer:
 
 ### Multimedia Mastery
 - **Repo or product:** `Awhitter/Multimedia4Mastery` and local multimedia-mastery-core naming family
-- **Local:** `/Users/alecwhitters/hlt/multimedia-mastery`
+- **Local:** `~/hlt/multimedia-mastery`
 - **Live:** `https://multimediamastery.vercel.app`
 - **Last verified:** 2026-04-24
 - **Role:** media-native production lane
@@ -1221,10 +1221,10 @@ Should say:
 This file should be maintained once and propagated everywhere.
 
 ### Current canonical source
-- `/Users/alecwhitters/Documents/Obsidian Vault/OpenClaw/System Maps/05-llms-ecosystem-master.md`
+- `Obsidian/OpenClaw/System Maps/05-llms-ecosystem-master.md`
 
 ### Current sync script
-- `/Users/alecwhitters/.openclaw/workspace/system/sync-llms-to-repos.sh`
+- `~/.openclaw/workspace/system/sync-llms-to-repos.sh`
 
 ### Current generated outputs
 Each target repo receives:
