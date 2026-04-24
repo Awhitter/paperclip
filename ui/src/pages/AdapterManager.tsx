@@ -33,6 +33,32 @@ import { ChoosePathButton } from "@/components/PathInstructionsModal";
 import { invalidateDynamicParser } from "@/adapters/dynamic-loader";
 import { invalidateConfigSchemaCache } from "@/adapters/schema-config-fields";
 
+type AdapterStatusTone = "ok" | "missing" | "error";
+
+function AdapterStatusPill({
+  label,
+  tone,
+  title,
+}: {
+  label: string;
+  tone: AdapterStatusTone;
+  title?: string;
+}) {
+  return (
+    <span
+      title={title}
+      className={cn(
+        "inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] leading-none",
+        tone === "ok" && "border-emerald-500/40 bg-emerald-500/10 text-emerald-700",
+        tone === "missing" && "border-border bg-muted/40 text-muted-foreground",
+        tone === "error" && "border-destructive/40 bg-destructive/10 text-destructive",
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
 function AdapterRow({
   adapter,
   canRemove,
@@ -108,6 +134,37 @@ function AdapterRow({
             )}
             {" · "}{adapter.modelsCount} models
           </p>
+          {adapter.source === "external" && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <AdapterStatusPill
+                tone={adapter.loaded ? "ok" : "error"}
+                label={adapter.loaded ? "loaded" : "not loaded"}
+                title={adapter.loadError}
+              />
+              <AdapterStatusPill
+                tone={adapter.hasConfigSchema ? "ok" : "missing"}
+                label={adapter.hasConfigSchema ? "schema" : "no schema"}
+              />
+              <AdapterStatusPill
+                tone={adapter.hasUiParser ? "ok" : "missing"}
+                label={adapter.hasUiParser ? "parser" : "no parser"}
+              />
+              <AdapterStatusPill
+                tone={adapter.hasDetectModel ? "ok" : "missing"}
+                label={adapter.hasDetectModel ? "model detect" : "no detect"}
+              />
+              <AdapterStatusPill
+                tone={adapter.hasSessionManagement ? "ok" : "missing"}
+                label={adapter.hasSessionManagement ? "session" : "no session"}
+              />
+              {adapter.hasLifecycleHooks && (
+                <AdapterStatusPill tone="ok" label="lifecycle hook" />
+              )}
+            </div>
+          )}
+          {adapter.loadError && (
+            <p className="mt-2 text-xs text-destructive">{adapter.loadError}</p>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {onReinstall && (
@@ -610,6 +667,11 @@ export function AdapterManager() {
                   modelsCount: 0,
                   loaded: true,
                   disabled: virtual.menuDisabled,
+                  hasConfigSchema: false,
+                  hasUiParser: false,
+                  hasDetectModel: false,
+                  hasSessionManagement: false,
+                  hasLifecycleHooks: false,
                   capabilities: {
                     supportsInstructionsBundle: false,
                     supportsSkills: false,

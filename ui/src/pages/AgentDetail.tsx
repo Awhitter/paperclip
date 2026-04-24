@@ -41,6 +41,7 @@ import { RunButton, PauseResumeButton } from "../components/AgentActionButtons";
 import { BudgetPolicyCard } from "../components/BudgetPolicyCard";
 import { PackageFileTree, buildFileTree } from "../components/PackageFileTree";
 import { ScrollToBottom } from "../components/ScrollToBottom";
+import { RunContextCard } from "../components/RunContextCard";
 import { formatCents, formatDate, relativeTime, formatTokens, visibleRunCostUsd } from "../lib/utils";
 import { cn } from "../lib/utils";
 import { Button } from "@/components/ui/button";
@@ -3381,7 +3382,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
       )}
 
       {/* Log viewer */}
-      <LogViewer run={run} adapterType={adapterType} />
+      <LogViewer run={run} adapterType={adapterType} adapterConfig={adapterConfig} />
       <ScrollToBottom />
     </div>
   );
@@ -3389,7 +3390,15 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
 
 /* ---- Log Viewer ---- */
 
-function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: string }) {
+function LogViewer({
+  run,
+  adapterType,
+  adapterConfig,
+}: {
+  run: HeartbeatRun;
+  adapterType: string;
+  adapterConfig: Record<string, unknown>;
+}) {
   const [events, setEvents] = useState<HeartbeatRunEvent[]>([]);
   const [logLines, setLogLines] = useState<Array<{ ts: string; stream: "stdout" | "stderr" | "system"; chunk: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -3801,6 +3810,12 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
 
   return (
     <div className="space-y-3">
+      <RunContextCard
+        run={run}
+        adapterConfig={adapterConfig}
+        adapterInvokePayload={adapterInvokePayload}
+        censorUsernameInLogs={censorUsernameInLogs}
+      />
       <WorkspaceOperationsSection
         operations={workspaceOperations}
         censorUsernameInLogs={censorUsernameInLogs}

@@ -457,6 +457,14 @@ pnpm secrets:migrate-inline-env         # dry run
 pnpm secrets:migrate-inline-env --apply # apply migration
 ```
 
+Local process argv hygiene check:
+
+```sh
+pnpm check:process-secrets
+```
+
+This scans running process command lines for secret-looking flags or env assignments such as `--api-secret ...`, `--token ...`, or `CLOUDINARY_API_SECRET=...`. It reports only PIDs and pattern labels; move long-lived values into environment variables or Paperclip secret refs before launching local MCP/adapters.
+
 ## Company Deletion Toggle
 
 Company deletion is intended as a dev/debug capability and can be disabled at runtime:

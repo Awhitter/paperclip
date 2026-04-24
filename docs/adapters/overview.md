@@ -24,7 +24,6 @@ When a heartbeat fires, Paperclip:
 | OpenCode Local | `opencode_local` | Runs OpenCode CLI locally (multi-provider `provider/model`) |
 | Cursor | `cursor` | Runs Cursor in background mode |
 | Pi Local | `pi_local` | Runs an embedded Pi agent locally |
-| Hermes Local | `hermes_local` | Runs Hermes CLI locally (`hermes-paperclip-adapter`) |
 | OpenClaw Gateway | `openclaw_gateway` | Connects to an OpenClaw gateway endpoint |
 | [Process](/adapters/process) | `process` | Executes arbitrary shell commands |
 | [HTTP](/adapters/http) | `http` | Sends webhooks to external agents |
@@ -35,20 +34,23 @@ These adapters ship as standalone npm packages and are installed via the plugin 
 
 | Adapter | Package | Type Key | Description |
 |---------|---------|----------|-------------|
+| Hermes Local | `@henkey/hermes-paperclip-adapter` or local `file:` package | `hermes_local` | Runs Hermes CLI locally |
 | Droid Local | `@henkey/droid-paperclip-adapter` | `droid_local` | Runs Factory Droid locally |
 
 ## External Adapters
 
-You can build and distribute adapters as standalone packages — no changes to Paperclip's source code required. External adapters are loaded at startup via the plugin system.
+You can build and distribute adapters as standalone packages — no changes to Paperclip's source code required. External adapters are installed through the Adapter Manager or API, loaded at startup, and can be reloaded/reinstalled from the manager during local iteration. The manager surfaces loaded/schema/parser/model-detection/session status so missing optional contracts are visible before an agent run fails.
 
 ```sh
 # Install from npm via API
-curl -X POST http://localhost:3102/api/adapters \
+curl -X POST http://localhost:3102/api/adapters/install \
+  -H "Content-Type: application/json" \
   -d '{"packageName": "my-paperclip-adapter"}'
 
 # Or link from a local directory
-curl -X POST http://localhost:3102/api/adapters \
-  -d '{"localPath": "/home/user/my-adapter"}'
+curl -X POST http://localhost:3102/api/adapters/install \
+  -H "Content-Type: application/json" \
+  -d '{"packageName": "/home/user/my-adapter", "isLocalPath": true}'
 ```
 
 See [External Adapters](/adapters/external-adapters) for the full guide.
@@ -78,7 +80,7 @@ my-adapter/
 
 ## Choosing an Adapter
 
-- **Need a coding agent?** Use `claude_local`, `codex_local`, `opencode_local`, `hermes_local`, or install `droid_local` as an external plugin
+- **Need a coding agent?** Use `claude_local`, `codex_local`, or `opencode_local`; install `hermes_local` or `droid_local` as external plugins when you want those runtimes
 - **Need to run a script or command?** Use `process`
 - **Need to call an external service?** Use `http`
 - **Need something custom?** [Create your own adapter](/adapters/creating-an-adapter) or [build an external adapter plugin](/adapters/external-adapters)

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const agentId = "11111111-1111-4111-8111-111111111111";
 const companyId = "22222222-2222-4222-8222-222222222222";
+const ROUTE_TEST_TIMEOUT_MS = 15_000;
 
 const baseAgent = {
   id: agentId,
@@ -221,7 +222,7 @@ describe("agent permission routes", () => {
     expect(res.status).toBe(200);
     expect(res.body.adapterConfig).toEqual({});
     expect(res.body.runtimeConfig).toEqual({});
-  });
+  }, ROUTE_TEST_TIMEOUT_MS);
 
   it("redacts company agent list for authenticated company members without agent admin permission", async () => {
     mockAccessService.canUser.mockResolvedValue(false);

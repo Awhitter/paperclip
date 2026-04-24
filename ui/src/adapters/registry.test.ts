@@ -5,6 +5,7 @@ import {
   getUIAdapter,
   listUIAdapters,
   registerUIAdapter,
+  syncExternalAdapters,
   unregisterUIAdapter,
 } from "./registry";
 import { processUIAdapter } from "./process";
@@ -21,10 +22,12 @@ const externalUIAdapter: UIAdapterModule = {
 describe("ui adapter registry", () => {
   beforeEach(() => {
     unregisterUIAdapter("external_test");
+    unregisterUIAdapter("external_schema");
   });
 
   afterEach(() => {
     unregisterUIAdapter("external_test");
+    unregisterUIAdapter("external_schema");
   });
 
   it("registers adapters for lookup and listing", () => {
@@ -47,5 +50,20 @@ describe("ui adapter registry", () => {
     expect(fallback.type).toBe("external_test");
     // But it uses the schema-based config fields for external adapter forms.
     expect(fallback.ConfigFields).toBe(SchemaConfigFields);
+  });
+
+  it("registers non-builtin external adapters with schema-driven config fields", () => {
+    syncExternalAdapters([
+      {
+        type: "external_schema",
+        label: "External Schema",
+      },
+    ]);
+
+    const adapter = findUIAdapter("external_schema");
+    expect(adapter).not.toBeNull();
+    expect(adapter?.label).toBe("External Schema");
+    expect(adapter?.ConfigFields).toBe(SchemaConfigFields);
+    expect(listUIAdapters().some((entry) => entry.type === "external_schema")).toBe(true);
   });
 });

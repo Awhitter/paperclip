@@ -19,6 +19,12 @@ export interface AdapterInfo {
   loaded: boolean;
   disabled: boolean;
   capabilities: AdapterCapabilities;
+  hasConfigSchema: boolean;
+  hasUiParser: boolean;
+  hasDetectModel: boolean;
+  hasSessionManagement: boolean;
+  hasLifecycleHooks: boolean;
+  loadError?: string;
   /** Installed version (for external npm adapters) */
   version?: string;
   /** Package name (for external adapters) */

@@ -440,7 +440,7 @@ For each major repo, this document should answer:
 - what shapes or contracts matter operationally
 - where to inspect first
 
-> ⚠ Staleness audit 2026-04-17: this inventory covers **8 of 15** active repos the `sync-llms-to-repos.sh` script now fans into. Missing: **Engage**, **Nursing Jobs**, **Forum Template**, **Brand Design Lab**, **GPT Researcher**, **Mastra**, **Operator Evals**, **Paperclip**, **Research Team**. Local paths below still say `/Users/alecwhitters/Downloads/...` but the canonical path migrated to `/Users/alecwhitters/hlt/<repo>` on 2026-04-17; treat the Downloads paths as aliases. **Content Creator Studio** and **EduMastery** are in `~/Downloads/AI2 April/` and `~/Downloads/` respectively; neither is in the active `~/hlt/` working set or the sync-script target list. Each repo stanza needs a Last-verified refresh; bumping the four primary repos (Katailyst, sidecar-system, MasteryPublishing, Multimedia Mastery) to 2026-04-17 below.
+> ⚠ Staleness audit 2026-04-17: this inventory covers **8 of 15** active repos the `sync-llms-to-repos.sh` script now fans into. Missing: **Engage**, **Nursing Jobs**, **Forum Template**, **Brand Design Lab**, **GPT Researcher**, **Mastra**, **Operator Evals**, **Paperclip**, **Research Team**. Local paths below still say `~/Downloads/...` but the canonical path migrated to `~/hlt/<repo>` on 2026-04-17; treat the Downloads paths as aliases. **Content Creator Studio** and **EduMastery** are in `~/Downloads/AI2 April/` and `~/Downloads/` respectively; neither is in the active `~/hlt/` working set or the sync-script target list. Each repo stanza needs a Last-verified refresh; bumping the four primary repos (Katailyst, sidecar-system, MasteryPublishing, Multimedia Mastery) to 2026-04-17 below.
 
 ### Katailyst
 - **Repo:** `Awhitter/katailyst`
@@ -464,7 +464,7 @@ For each major repo, this document should answer:
 ### sidecar-system
 - **Repo:** `Awhitter/sidecar-system`
 - **GitHub:** `https://github.com/Awhitter/sidecar-system`
-- **Local:** `/Users/alecwhitters/Downloads/sidecar-system`
+- **Local:** `~/Downloads/sidecar-system`
 - **Live:** `https://sidecar-system.vercel.app`
 - **Alt live:** `https://sidecar-system-work.vercel.app`
 - **Last verified:** 2026-04-17
@@ -484,7 +484,7 @@ For each major repo, this document should answer:
 ### MasteryPublishing
 - **Repo:** `Awhitter/MasteryPublishing`
 - **GitHub:** `https://github.com/Awhitter/MasteryPublishing`
-- **Local:** `/Users/alecwhitters/Downloads/MasteryPublishing`
+- **Local:** `~/Downloads/MasteryPublishing`
 - **Legacy live alias:** `https://v0-next-js-content-engine.vercel.app`
 - **Public route family:** `https://hltmastery.com/nursing/resources`
 - **Last verified:** 2026-04-17
@@ -503,7 +503,7 @@ For each major repo, this document should answer:
 
 ### Multimedia Mastery
 - **Repo or product:** `Awhitter/Multimedia4Mastery` and local multimedia-mastery-core naming family
-- **Local:** `/Users/alecwhitters/Downloads/multimedia-mastery-core`
+- **Local:** `~/Downloads/multimedia-mastery-core`
 - **Live:** `https://multimediamastery.vercel.app`
 - **Last verified:** 2026-04-17
 - **Role:** media-native production lane
@@ -1191,10 +1191,10 @@ Should say:
 This file should be maintained once and propagated everywhere.
 
 ### Current canonical source
-- `/Users/alecwhitters/Documents/Obsidian Vault/OpenClaw/System Maps/05-llms-ecosystem-master.md`
+- `~/Documents/Obsidian Vault/OpenClaw/System Maps/05-llms-ecosystem-master.md`
 
 ### Current sync script
-- `/Users/alecwhitters/.openclaw/workspace/system/sync-llms-to-repos.sh`
+- `~/.openclaw/workspace/system/sync-llms-to-repos.sh`
 
 ### Current generated outputs
 Each target repo receives:

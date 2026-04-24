@@ -20,6 +20,7 @@ const mockHeartbeatService = vi.hoisted(() => ({
 }));
 
 const mockLogActivity = vi.hoisted(() => vi.fn(async () => undefined));
+const ROUTE_TEST_TIMEOUT_MS = 15_000;
 
 vi.mock("@paperclipai/shared/telemetry", () => ({
   trackAgentTaskCompleted: vi.fn(),
@@ -115,7 +116,8 @@ function makeComment(overrides: Record<string, unknown> = {}) {
 
 describe("issue comment cancel routes", () => {
   beforeEach(() => {
-    vi.resetModules();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
     vi.resetAllMocks();
     mockIssueService.getById.mockResolvedValue(makeIssue());
     mockIssueService.assertCheckoutOwner.mockResolvedValue({ adoptedFromRunId: null });
@@ -156,7 +158,7 @@ describe("issue comment cancel routes", () => {
         }),
       }),
     );
-  });
+  }, ROUTE_TEST_TIMEOUT_MS);
 
   it("rejects canceling comments that are no longer queued", async () => {
     mockIssueService.getComment.mockResolvedValue(

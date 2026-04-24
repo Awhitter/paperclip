@@ -94,15 +94,6 @@ const MAX_INLINE_WAKE_COMMENT_BODY_CHARS = 4_000;
 const MAX_INLINE_WAKE_COMMENT_BODY_TOTAL_CHARS = 12_000;
 const execFile = promisify(execFileCallback);
 const ACTIVE_HEARTBEAT_RUN_STATUSES = ["queued", "running"] as const;
-const SESSIONED_LOCAL_ADAPTERS = new Set([
-  "claude_local",
-  "codex_local",
-  "cursor",
-  "gemini_local",
-  "hermes_local",
-  "opencode_local",
-  "pi_local",
-]);
 const INLINE_BASE64_IMAGE_DATA_RE = /("type":"image","source":\{"type":"base64","data":")([A-Za-z0-9+/=]{1024,})(")/g;
 
 type RuntimeConfigSecretResolver = Pick<
@@ -851,7 +842,12 @@ function formatCount(value: number | null | undefined) {
 }
 
 export function parseSessionCompactionPolicy(agent: typeof agents.$inferSelect): SessionCompactionPolicy {
-  return resolveSessionCompactionPolicy(agent.adapterType, agent.runtimeConfig).policy;
+  const adapter = getServerAdapter(agent.adapterType);
+  return resolveSessionCompactionPolicy(
+    agent.adapterType,
+    agent.runtimeConfig,
+    adapter.sessionManagement ?? null,
+  ).policy;
 }
 
 export function resolveRuntimeSessionParamsForWorkspace(input: {
@@ -1333,7 +1329,8 @@ function isSameTaskScope(left: string | null, right: string | null) {
 }
 
 function isTrackedLocalChildProcessAdapter(adapterType: string) {
-  return SESSIONED_LOCAL_ADAPTERS.has(adapterType);
+  const adapter = getServerAdapter(adapterType);
+  return adapter.sessionManagement?.supportsSessionResume === true;
 }
 
 // A positive liveness check means some process currently owns the PID.

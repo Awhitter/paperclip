@@ -43,6 +43,16 @@ vi.mock("../adapters/index.ts", async () => {
     ...actual,
     getServerAdapter: vi.fn(() => ({
       supportsLocalAgentJwt: false,
+      sessionManagement: {
+        supportsSessionResume: true,
+        nativeContextManagement: "confirmed",
+        defaultSessionCompaction: {
+          enabled: true,
+          maxSessionRuns: 0,
+          maxRawInputTokens: 0,
+          maxSessionAgeHours: 0,
+        },
+      },
       execute: vi.fn(async () => ({
         exitCode: 0,
         signal: null,
