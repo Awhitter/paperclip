@@ -30,6 +30,8 @@ vi.mock("../services/index.js", () => ({
 }));
 
 async function createApp(actor: Record<string, unknown>) {
+  vi.resetModules();
+  vi.doUnmock("../routes/authz.js");
   const [{ errorHandler }, { issueTreeControlRoutes }] = await Promise.all([
     import("../middleware/index.js"),
     import("../routes/issue-tree-control.js"),
