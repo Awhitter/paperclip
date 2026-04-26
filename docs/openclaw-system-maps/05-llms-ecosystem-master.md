@@ -363,7 +363,7 @@ Every tool here resolves its credentials server-side via Katailyst vault (`auth_
 - **https://multimediamastery.vercel.app** (307) — redirects to subpath. Media API + studio at `/api/media/v1/*`.
 - **https://gpt-researcher-production-2b53.up.railway.app** (405 on HEAD, POST-only endpoints live) — `POST /api/quick_search`, `POST /report/`.
 - **https://answers.hltcorp.com** (200) — Evidence-Based Business / Metabase.
-- **https://hltadspdash-gqtedncp.manus.space** — Manus-built Meta Ads dashboard (operator-shared; keep live alongside the sidecar `/admin/ads-command-center` when that ships).
+- **https://hltadspdash-gqtedncp.manus.space** — Manus-built Meta Ads dashboard (operator-shared; keep live alongside the sidecar `/ads` operator route).
 - **https://ai4mastery-next-two.vercel.app** — AI4EDU publishing surface (`POST /api/publish` consumes ArticleV2).
 - Per-app product sites: `nclexrnmastery.com`, `fnpmastery.com`, `teasmastery.com`, `nclexpnmastery.com`, `asvabmastery.com`, `inbdemastery.com`, and the broader per-exam set — see the HLT Master Almanac (linked below) for the full list with app-store + social handles.
 
@@ -464,7 +464,7 @@ For each major repo, this document should answer:
 ### sidecar-system
 - **Repo:** `Awhitter/sidecar-system`
 - **GitHub:** `https://github.com/Awhitter/sidecar-system`
-- **Local:** `~/hlt/sidecar`
+- **Local:** `/Users/alecwhitters/hlt/sidecar`
 - **Live:** `https://sidecar-system.vercel.app`
 - **Alt live:** `https://sidecar-system-work.vercel.app`
 - **Last verified:** 2026-04-24
@@ -484,7 +484,7 @@ For each major repo, this document should answer:
 ### MasteryPublishing
 - **Repo:** `Awhitter/MasteryPublishing`
 - **GitHub:** `https://github.com/Awhitter/MasteryPublishing`
-- **Local:** `~/hlt/mastery-publishing`
+- **Local:** `/Users/alecwhitters/hlt/mastery-publishing`
 - **Legacy live alias:** `https://v0-next-js-content-engine.vercel.app`
 - **Public route family:** `https://hltmastery.com/nursing/resources`
 - **Last verified:** 2026-04-24
@@ -503,7 +503,7 @@ For each major repo, this document should answer:
 
 ### Multimedia Mastery
 - **Repo or product:** `Awhitter/Multimedia4Mastery` and local multimedia-mastery-core naming family
-- **Local:** `~/hlt/multimedia-mastery`
+- **Local:** `/Users/alecwhitters/hlt/multimedia-mastery`
 - **Live:** `https://multimediamastery.vercel.app`
 - **Last verified:** 2026-04-24
 - **Role:** media-native production lane
@@ -1077,7 +1077,7 @@ This is the "are we really integrated" pass. Each repo should know: what it conn
 | `forum-template` | not yet (Mission 6b fix pending) | `FORUM_INTERNAL_PUSH_SECRET` (planned) | its own threads/comments | nurse candidates / students |
 | `agent-canvas` | PAT to katailyst | katailyst PAT | agent runtime canvas | fleet agents (Victoria, Julius, Lila, Ares, Magnus) |
 | `brand-design-lab` | PAT to katailyst | template env | sidecar-template reference | scaffolding new sidecars |
-| `evidence-based-business` | Metabase + Supabase readonly | `clean-ebb/api-token` **MISSING** | `/api/ai-analysis` **ENDPOINT MISSING** | operator via answers.hltcorp.com |
+| `evidence-based-business` | Metabase + Supabase readonly | `CLEAN_EBB_API_TOKEN` / `EBB_API_TOKEN` for auth smoke | `/api/ai-analysis` exists; 401 without token is expected | operator via answers.hltcorp.com |
 | `gpt-researcher` | — (cited web research service) | `OPENAI_API_KEY` + `TAVILY_API_KEY` | `/api/quick_search` + `/report/*` | sidecar specialists + direct operator use |
 | `mastra` | Inngest workflow runtime | n/a | Mastra workflow invocations | paperclip mastra-gateway |
 | `operator-evals` | PAT to katailyst | katailyst PAT | eval dashboard | operator |
@@ -1097,7 +1097,7 @@ This is the "are we really integrated" pass. Each repo should know: what it conn
 
 Operator directive: isolate each platform into its own repo so credentials, rate limits, and error surfaces don't cross-contaminate. Manus-built dashboards stay live as reference while native sidecars catch up.
 
-**Meta Ads (Facebook + Instagram)** — current state: Manus dashboard live at `https://hltadspdash-gqtedncp.manus.space`. Native surface: sidecar `/admin/ads-command-center` (Phase 5 in polish plan), additive not replacement. Reads via `tool:meta-ads.insights` (Catalyst MCP) once `http_multi_action` executor ships.
+**Meta Ads (Facebook + Instagram)** — current state: Manus dashboard live at `https://hltadspdash-gqtedncp.manus.space`. Native surface: sidecar `/ads` (shipped Ads Factory v1), additive not replacement. Reads via `tool:meta-ads.insights` (Catalyst MCP) once `http_multi_action` executor ships.
 
 **Google Ads** — no repo yet. Should be a separate sidecar `~/hlt/google-ads/` or a lane inside sidecar-system. Credentials in vault path `google-ads/*` (to be created). Isolated from Meta Ads per operator.
 
@@ -1191,10 +1191,10 @@ Should say:
 This file should be maintained once and propagated everywhere.
 
 ### Current canonical source
-- `Obsidian/OpenClaw/System Maps/05-llms-ecosystem-master.md`
+- `/Users/alecwhitters/Documents/Obsidian Vault/OpenClaw/System Maps/05-llms-ecosystem-master.md`
 
 ### Current sync script
-- `~/.openclaw/workspace/system/sync-llms-to-repos.sh`
+- `/Users/alecwhitters/.openclaw/workspace/system/sync-llms-to-repos.sh`
 
 ### Current generated outputs
 Each target repo receives:
