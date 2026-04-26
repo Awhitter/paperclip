@@ -31,11 +31,11 @@ You are currently inside **Paperclip**, the Mastra-gateway-adapter lane. Parked 
 
 ### Recent significant changes (last 5 commits)
 
-- e4995bbb 2026-04-23 Add SSH environment support (#4358)
-- f98c348e 2026-04-23 [codex] Add issue subtree pause, cancel, and restore controls (#4332)
-- 854fa817 2026-04-23 fix(pi-local): prepend installed skill bin/ dirs to child PATH (#4331)
-- fe14de50 2026-04-23 [codex] Document README architecture systems (#4250)
-- 3d15798c 2026-04-23 fix(adapters/routes): apply resolveExternalAdapterRegistration on hot-install (#4324)
+- 3bb8ebdc 2026-04-24 feat(observability): trace Paperclip heartbeat runs with Langfuse
+- f5014630 2026-04-24 ci: skip docker publish on fork pushes
+- 9b30c0a3 2026-04-24 ci: skip canary publish on fork pushes
+- be9f7075 2026-04-24 Merge remote-tracking branch 'origin/master'
+- 4abf1372 2026-04-24 docs: refresh llms recent changes
 
 ## Behavioral rules
 
